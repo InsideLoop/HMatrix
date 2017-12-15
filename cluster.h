@@ -7,6 +7,54 @@
 #include <il/Array2C.h>
 #include <il/Array2D.h>
 #include <il/StaticArray.h>
+#include <il/algorithmArray2D.h>
+#include "QuadTree.h"
+
+inline double distance(const il::Array2D<double>& node, il::Range range_0,
+                       il::Range range_1) {
+  IL_EXPECT_FAST(range_0.begin < range_0.end);
+  IL_EXPECT_FAST(range_1.begin < range_1.end);
+  IL_EXPECT_FAST(
+      (range_0.begin == range_1.begin && range_0.end == range_1.end) ||
+      range_0.end <= range_1.begin || range_1.end <= range_0.begin);
+
+  const il::int_t nb_nodes = node.size(0);
+  const il::int_t dim = node.size(1);
+
+  double distance = 0.0;
+  for (il::int_t d = 0; d < dim; ++d) {
+    const il::MinMax<double> bound_0 = il::minMax(node, range_0, d);
+    const il::MinMax<double> bound_1 = il::minMax(node, range_1, d);
+    distance += il::ipow<2>(il::max(0.0, bound_1.min - bound_0.max)) +
+                il::ipow<2>(il::max(0.0, bound_0.min - bound_1.max));
+  }
+  distance = std::sqrt(distance);
+}
+
+inline double diameter(const il::Array2D<double>& node, il::Range range) {
+  IL_EXPECT_FAST(range.begin < range.end);
+
+  const il::int_t nb_nodes = node.size(0);
+  const il::int_t dim = node.size(1);
+
+  double diameter = 0.0;
+  for (il::int_t d = 0; d < dim; ++d) {
+    const il::MinMax<double> bound = il::minMax(node, range, d);
+    diameter += il::ipow<2>(bound.max - bound.min);
+  }
+  diameter = std::sqrt(diameter);
+
+  return diameter;
+}
+
+inline bool isAdmissible(const il::Array2D<double>& node, double eta,
+                         il::Range range_0, il::Range range_1) {
+  const double diam_0 = diameter(node, range_0);
+  const double diam_1 = diameter(node, range_1);
+  const double dist = distance(node, range_0, range_1);
+
+  return il::max(diam_0, diam_1) <= eta * dist;
+}
 
 // k: is the node number. The tree is numbered as
 //
@@ -29,6 +77,7 @@ class BinaryTree {
 
  public:
   BinaryTree(il::int_t nb_nodes, il::int_t leaf_size);
+  il::Range operator[](il::int_t) const;
   void addLeft(il::int_t k, il::int_t i_begin, il::int_t i_end);
   void addRight(il::int_t k, il::int_t i_begin, il::int_t i_end);
   bool hasLeftNode(il::int_t k) const;
@@ -63,6 +112,10 @@ inline BinaryTree::BinaryTree(il::int_t nb_nodes, il::int_t leaf_size) {
 
   data_[0] = 0;
   data_[1] = nb_nodes;
+}
+
+inline il::Range BinaryTree::operator[](il::int_t k) const {
+  return il::Range{begin(k), end(k)};
 }
 
 inline void BinaryTree::addLeft(il::int_t k, il::int_t i_begin,
@@ -128,6 +181,48 @@ struct Reordering {
 };
 
 Reordering clustering(il::int_t leaf_size, il::io_t, il::Array2D<double>& node);
+
+enum class MatrixType { LowRank, FullRank, HMatrix };
+
+inline void matrixClustering_aux(const il::Array2D<double>& node,
+                                 const BinaryTree& btree, double eta,
+                                 il::int_t k, il::int_t k0, il::int_t k1,
+                                 il::io_t, hmat::QuadTree& qtree) {
+  const bool is_admissible = isAdmissible(node, eta, btree[k0], btree[k1]);
+  if (is_admissible) {
+    qtree.insert(k, btree[k0], btree[k1], hmat::MatrixType::LowRank);
+  } else {
+    if (btree.hasLeftNode(k0) && btree.hasRightNode(k0) &&
+        btree.hasLeftNode(k1) && btree.hasRightNode(k1)) {
+      qtree.insert(k, btree[k0], btree[k1], hmat::MatrixType::HMatrix);
+      matrixClustering_aux(node, btree, eta, qtree.child(k, 0),
+                           btree.leftNode(k0), btree.leftNode(k1), il::io,
+                           qtree);
+      matrixClustering_aux(node, btree, eta, qtree.child(k, 1),
+                           btree.leftNode(k0), btree.rightNode(k1), il::io,
+                           qtree);
+      matrixClustering_aux(node, btree, eta, qtree.child(k, 2),
+                           btree.rightNode(k0), btree.leftNode(k1), il::io,
+                           qtree);
+      matrixClustering_aux(node, btree, eta, qtree.child(k, 3),
+                           btree.rightNode(k0), btree.rightNode(k1), il::io,
+                           qtree);
+    } else if ((btree.hasLeftNode(k0) && btree.hasRightNode(k0)) ||
+               (btree.hasLeftNode(k1) && btree.hasRightNode(k1))) {
+      qtree.insert(k, btree[k0], btree[k1], hmat::MatrixType::FullRank);
+    } else {
+      // FIXME
+      qtree.insert(k, btree[k0], btree[k1], hmat::MatrixType::FullRank);
+    }
+  }
+}
+
+inline hmat::QuadTree matrixClustering(const il::Array2D<double>& node,
+                                       const BinaryTree& btree, double eta) {
+  hmat::QuadTree qtree{};
+  matrixClustering_aux(node, btree, eta, 0, 0, 0, il::io, qtree);
+  return qtree;
+};
 
 template <il::int_t dim>
 void aux_clustering_bis(il::int_t k, il::int_t leaf_size, il::io_t,

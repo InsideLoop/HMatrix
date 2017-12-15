@@ -3,4 +3,4 @@ project(HMatrix)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(HMatrix main.cpp cluster.h cluster.cpp)
+add_executable(HMatrix main.cpp cluster.h cluster.cpp QuadTree.h BinaryTree.h)
