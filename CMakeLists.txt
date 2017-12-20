@@ -35,5 +35,5 @@ elseif (IL_OPENBLAS)
     endif()
 endif()
 
-add_executable(HMatrix main.cpp cluster.h cluster.cpp QuadTree.h BinaryTree.h)
+add_executable(HMatrix main.cpp cluster.h cluster.cpp QuadTree.h BinaryTree.h Matrix.h routines.h)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
