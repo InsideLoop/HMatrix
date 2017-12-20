@@ -27,212 +27,233 @@ class Random {
 template <il::int_t p>
 class Matrix {
  private:
-  il::int_t n_;
+  il::int_t n0_;
+  il::int_t n1_;
+  double x0_;
+  double x1_;
 
  public:
-  Matrix(il::int_t n) { n_ = n; }
-  il::StaticArray2D<double, p, p> operator()(il::int_t i, il::int_t j) {
-    IL_EXPECT_FAST(static_cast<std::size_t>(i) < static_cast<std::size_t>(n_));
-    IL_EXPECT_FAST(static_cast<std::size_t>(j) < static_cast<std::size_t>(n_));
+  Matrix(il::int_t n0, il::int_t n1, double x0, double x1) {
+    n0_ = n0;
+    n1_ = n1;
+  }
+  il::int_t size(il::int_t k) const {
+    IL_EXPECT_FAST(k >= 0 && k <= 2);
+    return (k == 0) ? n0_ : n1_;
+  }
+  il::StaticArray2D<double, p, p> operator()(il::int_t i0, il::int_t i1) {
+    IL_EXPECT_FAST(static_cast<std::size_t>(i0) <
+                   static_cast<std::size_t>(n0_));
+    IL_EXPECT_FAST(static_cast<std::size_t>(i1) <
+                   static_cast<std::size_t>(n1_));
 
-    const double xi = 0.0 + i * (1.0 / n_);
-    const double xj = 5.0 + j * (1.0 / n_);
+    const double xi = x0_ + i0 * (1.0 / n0_);
+    const double xj = x1_ + i1 * (1.0 / n1_);
     const double u = std::exp(-il::abs(xi - xj));
-
-    return il::StaticArray2D<double, 3, 3>{
+    return il::StaticArray2D<double, p, p>{
         il::value, {{u, 0.0, 0.0}, {0.0, 2 * u, 0.0}, {0.0, 0.0, 3 * u}}};
   }
 };
 
+template <il::int_t p>
+il::StaticArray2D<double, p, p> residual(const Matrix<p>& M,
+                                         const il::Array2D<double>& A,
+                                         const il::Array2D<double>& B,
+                                         il::int_t i0, il::int_t i1,
+                                         il::int_t r) {
+  il::StaticArray2D<double, p, p> matrix = M(i0, i1);
+  il::Array2DEdit<double> reference_matrix = matrix.edit();
+  il::blas(-1.0,
+           A.view(il::Range{i0 * p, (i0 + 1) * p}, il::Range{0, r * p}),
+           B.view(il::Range{0, r * p}, il::Range{i1 * p, (i1 + 1) * p}),
+           1.0, il::io, reference_matrix);
+
+  return matrix;
+};
+
+template <il::int_t p>
+il::int_t searchI1(const Matrix<p>& M, const il::Array2D<double>& A,
+                   const il::Array2D<double>& B, il::int_t i0_search,
+                   const il::Array<il::int_t>& i1_used) {
+  const il::int_t n0 = M.size(0);
+  const il::int_t n1 = M.size(1);
+  const il::int_t rank = i1_used.size();
+
+  il::int_t i1_search = -1;
+  double largest_singular_value = 0.0;
+  for (il::int_t i1 = 0; i1 < n1; ++i1) {
+    bool already_searched = false;
+    for (il::int_t k = 0; k < i1_used.size(); ++k) {
+      if (i1 == i1_used[k]) {
+        already_searched = true;
+      }
+    }
+    if (!already_searched) {
+      // To optimize: We don't need to compute the full list of singular
+      // values. Only the smallest singular value needs to be computed
+      il::StaticArray2D<double, p, p> matrix =
+          residual(M, A, B, i0_search, i1, rank);
+
+      il::Status status{};
+      il::StaticArray<double, p> singular_values =
+          il::singularValues(matrix, il::io, status);
+      status.abortOnError();
+
+      il::sort(il::io, singular_values);
+
+      if (singular_values[0] > largest_singular_value) {
+        i1_search = i1;
+        largest_singular_value = singular_values[0];
+      }
+    }
+  }
+  return i1_search;
+}
+
+template <il::int_t p>
+il::int_t searchI0(const Matrix<p>& M, const il::Array2D<double>& A,
+                   const il::Array<il::int_t> i0_used, il::int_t i1) {
+  const il::int_t n0 = M.size(0);
+  const il::int_t n1 = M.size(1);
+  const il::int_t rank = i0_used.size();
+
+  il::int_t i0_search = -1;
+  double largest_singular_value = 0.0;
+  for (il::int_t i0 = 0; i0 < n0; ++i0) {
+    bool already_searched = false;
+    for (il::int_t k = 0; k < i0_used.size(); ++k) {
+      if (i0 == i0_used[k]) {
+        already_searched = true;
+      }
+    }
+    if (!already_searched) {
+      // To optimize: We don't need to compute the full list of singular
+      // values. Only the smallest singular value needs to be computed
+      il::StaticArray2D<double, p, p> matrix{};
+      for (il::int_t b1 = 0; b1 < p; ++b1) {
+        for (il::int_t b0 = 0; b0 < p; ++b0) {
+          matrix(b0, b1) = A(i0 * p + b0, rank * p + b1);
+        }
+      }
+
+      il::Status status{};
+      il::StaticArray<double, p> singular_values =
+          il::singularValues(matrix, il::io, status);
+      status.abortOnError();
+
+      il::sort(il::io, singular_values);
+
+      if (singular_values[0] > largest_singular_value) {
+        i0_search = i0;
+        largest_singular_value = singular_values[0];
+      }
+    }
+  }
+  return i0_search;
+}
+
 int main() {
   const il::int_t p = 3;
-  const il::int_t n = 5;
+  const il::int_t n0 = 5;
+  const il::int_t n1 = 5;
+  const double x0 = 0.0;
+  const double x1 = 5.0;
 
-  Matrix<p> M{n};
-  il::Array2D<il::StaticArray2D<double, p, p>> A{n, 0};
-  il::Array2D<il::StaticArray2D<double, p, p>> B{0, n};
+  Matrix<p> M{n0, n1, x0, x1};
+  il::Array2D<double> A{n0 * p, 0};
+  il::Array2D<double> B{0, n1 * p};
 
-  il::Array<il::int_t> list_i{};
-  il::Array<il::int_t> list_j{};
+  il::Array<il::int_t> i0_used{};
+  il::Array<il::int_t> i1_used{};
 
   il::int_t rank = 0;
-  il::int_t i_search = 0;
-  double frobenius = 0.0;
+  il::int_t i0_search = 0;
+  double frobenius_low_rank = 0.0;
+
   while (true) {
-    il::int_t j_search = -1;
-    double largest_singular_value = -1.0;
-    for (il::int_t j = 0; j < n; ++j) {
-      bool already_searched = false;
-      for (il::int_t k = 0; k < list_j.size(); ++k) {
-        if (j == list_j[k]) {
-          already_searched = true;
-        }
-      }
-      if (!already_searched) {
-        // To optimize: We don't need to compute the full list of singular
-        // values. Only the smallest singular value needs to be computed
-        il::StaticArray2D<double, p, p> matrix = M(i_search, j);
-        for (il::int_t k = 0; k < rank; ++k) {
-          il::blas(-1.0, A(i_search, k), B(k, j), 1.0, il::io, matrix);
-        }
-
-        il::Status status{};
-        il::StaticArray<double, p> singular_values =
-            il::singularValues(matrix, il::io, status);
-        status.abortOnError();
-
-        il::sort(il::io, singular_values);
-
-        if (singular_values[0] > largest_singular_value) {
-          j_search = j;
-          largest_singular_value = singular_values[0];
-        }
-      }
+    // In the Row i0_search of the matrix M - Sum_{k = 0}^rank Ak cross Bk
+    // we search for the p x p matrix whose lowest singular value is the highest
+    //
+    const il::int_t i1_search = searchI1(M, A, B, i0_search, i1_used);
+    if (i1_search == -1) {
+      // We don't have any pivot
+      IL_UNREACHABLE;
     }
-    if (largest_singular_value == 0.0) {
-      break;
-    }
+    i0_used.append(i0_search);
+    i1_used.append(i1_search);
 
-    list_i.append(i_search);
-    list_j.append(j_search);
-
-    // We have found the largest singular value
-    il::StaticArray2D<double, p, p> matrix = M(i_search, j_search);
-    for (il::int_t k = 0; k < rank; ++k) {
-      il::blas(-1.0, A(i_search, k), B(k, j_search), 1.0, il::io, matrix);
-    }
+    // Now, we compute the inverse for the pxp-matrix which has the largest
+    // smallest singular value. The matrix we have has to be nonsingular.
+    // Otherwise, we would have gotten i1_search == -1
+    //
+    il::StaticArray2D<double, p, p> matrix =
+        residual(M, A, B, i0_search, i1_search, rank);
     il::Status status{};
     il::LU<il::StaticArray2D<double, p, p>> lu{matrix, il::io, status};
     status.abortOnError();
-
     il::StaticArray2D<double, p, p> gamma = lu.inverse();
-
     // Just to check
     il::StaticArray2D<double, p, p> check_identity = il::dot(gamma, matrix);
 
-    A.resize(n, rank + 1);
-    for (il::int_t i = 0; i < n; ++i) {
-      il::StaticArray2D<double, p, p> matrix = M(i, j_search);
-      for (il::int_t k = 0; k < rank; ++k) {
-        il::blas(-1.0, A(i, k), B(k, j_search), 1.0, il::io, matrix);
-      }
-      A(i, rank) = matrix;
-    }
-    B.resize(rank + 1, n);
-    for (il::int_t j = 0; j < n; ++j) {
-      il::StaticArray2D<double, p, p> matrix = M(i_search, j);
-      for (il::int_t k = 0; k < rank; ++k) {
-        il::blas(-1.0, A(i_search, k), B(k, j), 1.0, il::io, matrix);
-      }
-      B(rank, j) = il::dot(gamma, matrix);
-    }
-
-    // Compute the Frobenius norms
-    for (il::int_t j = 0; j < n; ++j) {
-      for (il::int_t bj = 0; bj < p; ++bj) {
-        for (il::int_t bi = 0; bi < p; ++bi) {
-          const double value = B(rank, j)(bi, bj);
-          frobenius_B += value * value;
-        }
-      }
-    }
-    // Update Frobenius general
-    il::StaticArray2D<double, p, p> A_norm{};
-    for (il::int_t b0 = 0; b0 < p; ++b0) {
+    // Update the Matrices A and B to take into account the new ranks
+    A.resize(n0 * p, (rank + 1) * p);
+    for (il::int_t i0 = 0; i0 < n0; ++i0) {
+      il::StaticArray2D<double, p, p> matrix =
+          residual(M, A, B, i0, i1_search, rank);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
-        double sum = 0.0;
-        for (il::int_t i = 0; i < n; ++i) {
-          for (il::int_t b = 0; b < p; ++b) {
-            sum += A(i, rank)(b, b0) * A(i, rank)(b ,b1);
-          }
+        for (il::int_t b0 = 0; b0 < p; ++b0) {
+          A(i0 * p + b0, rank * p + b1) = matrix(b0, b1);
         }
-        A_norm(b0, b1) = sum;
       }
     }
-    il::StaticArray2D<double, p, p> B_norm{};
-    for (il::int_t b0 = 0; b0 < p; ++b0) {
+    B.resize((rank + 1) * p, n1 * p);
+    for (il::int_t i1 = 0; i1 < n1; ++i1) {
+      il::StaticArray2D<double, p, p> matrix =
+          residual(M, A, B, i0_search, i1, rank);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
-        double sum = 0.0;
-        for (il::int_t j = 0; j < n; ++j) {
-          for (il::int_t b = 0; b < p; ++b) {
-            sum += B(rank, j)(b0, b) * B(rank, j)(b1, b);
-          }
-        }
-        B_norm(b0, b1) = sum;
-      }
-    }
-//    double frobenius_A = 0.0;
-//    for (il::int_t b = 0; b < p; ++b) {
-//      frobenius_A = A_norm(b, b);
-//    }
-//    double frobenius_B = 0.0;
-//    for (il::int_t b = 0; b < p; ++b) {
-//      frobenius_B = B_norm(b, b);
-//    }
-    for (il::int_t bi = 0; bi < p; ++bi) {
-      for (il::int_t bj = 0; bj < p; ++bj) {
-        frobenius += A_norm(bi, bj) * B_norm(bi, bj);
-      }
-    }
-    il::Array2D<double> AAB{p, n, 0.0};
-    for (il::int_t bi = 0; bi < p; ++bi) {
-      for (il::int_t j = 0; j < n; ++j) {
-        for (il::int_t bj = 0; bj < p; ++bj) {
-          AAB(bi, j) += A_norm(bi, bj) * B(rank, j)(bj, );
+        for (il::int_t b0 = 0; b0 < p; ++b0) {
+          B(rank * p + b0, i1 * p + b1) = matrix(b0, b1);
         }
       }
     }
 
+    // New value for the norm of A
+    il::StaticArray2D<double, p, p> frobenius_A{0.0};
+    il::blas(
+        1.0,
+        A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
+        il::Blas::Transpose,
+        A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
+        0.0, frobenius_A.edit());
+    // New value for the norm of B
+    il::StaticArray2D<double, p, p> frobenius_B{0.0};
+    il::blas(
+        1.0,
+        B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
+        B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
+        il::Blas::Transpose, 0.0, frobenius_B.edit());
 
-
-
-
-
-    // Find the next row
-    i_search = -1;
-    largest_singular_value = -1.0;
-    for (il::int_t i = 0; i < n; ++i) {
-      // Look if i has already been searched for
-      bool already_searched = false;
-      for (il::int_t k = 0; k < list_i.size(); ++k) {
-        if (i == list_i[k]) {
-          already_searched = true;
-        }
-      }
-      if (!already_searched) {
-        // To optimize: We don't need to compute the full list of singular
-        // values. Only the smallest singular value needs to be computed
-        il::Status status{};
-        il::StaticArray<double, p> singular_values =
-            il::singularValues(A(i, rank), il::io, status);
-        status.abortOnError();
-
-        il::sort(il::io, singular_values);
-
-        if (singular_values[0] > largest_singular_value) {
-          i_search = i;
-          largest_singular_value = singular_values[0];
-        }
-      }
-    }
+    il::int_t i0_search = searchI0(M, A, i0_used, i1_search);
     ++rank;
 
-    if (rank == n) {
+    if (rank == il::min(n0, n1)) {
       break;
     }
   }
 
   // Compute the difference in between the original matrix and A.B
-  il::Array2D<il::StaticArray2D<double, p, p>> diff{n, n};
-  for (il::int_t j = 0; j < n; ++j) {
-    for (il::int_t i = 0; i < n; ++i) {
-      il::StaticArray2D<double, p, p> matrix = M(i, j);
-      for (il::int_t k = 0; k < rank; ++k) {
-        il::blas(-1.0, A(i, k), B(k, j), 1.0, il::io, matrix);
+  il::Array2D<double> diff{n0 * p, n1 * p};
+  for (il::int_t i1 = 0; i1 < n1; ++i1) {
+    for (il::int_t i0 = 0; i0 < n0; ++i0) {
+      const il::StaticArray2D<double, p, p> matrix = M(i0, i1);
+      for (il::int_t b1 = 0; b1 < p; ++b1) {
+        for (il::int_t b0 = 0; b0 < p; ++b0) {
+          diff(i0 * p + b0, i1 * p + b1) = matrix(b0, b1);
+        }
       }
-      diff(i, j) = matrix;
     }
   }
+  il::blas(-1.0, A, B, 1.0, il::io, diff);
 
   return 0;
 }
