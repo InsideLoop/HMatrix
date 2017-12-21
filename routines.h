@@ -98,10 +98,10 @@ il::int_t searchI1(const hmat::Matrix<p>& M, const il::Array2D<double>& A,
 
 template <il::int_t p>
 il::int_t searchI0(const hmat::Matrix<p>& M, const il::Array2D<double>& A,
-                   const il::Array<il::int_t> i0_used, il::int_t i1,
+                   il::Range range0 , il::Range range1, const il::Array<il::int_t> i0_used, il::int_t i1,
                    il::int_t rank) {
-  const il::int_t n0 = M.size(0);
-  const il::int_t n1 = M.size(1);
+  const il::int_t n0 = range0.end - range0.begin;
+  const il::int_t n1 = range1.end - range0.begin;
 
   il::int_t i0_search = -1;
   double largest_singular_value = 0.0;

@@ -47,6 +47,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
   il::int_t rank = 0;
   il::int_t i0_search = 0;
   double frobenius_low_rank = 0.0;
+  double frobenius_norm_difference = -1.0;
 
   while (true) {
     // In the Row i0_search of the matrix M - Sum_{k = 0}^rank Ak cross Bk
@@ -56,7 +57,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
         hmat::searchI1(M, A, B, range0, range1, i0_search, i1_used);
     if (i1_search == -1) {
       // We don't have any pivot
-      IL_UNREACHABLE;
+      break;
     }
     i0_used.append(i0_search);
     i1_used.append(i1_search);
@@ -144,20 +145,20 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     }
     frobenius_low_rank += 2 * scalar_product + frobenius_norm_ab;
 
-    i0_search = hmat::searchI0(M, A, i0_used, i1_search, rank);
+    i0_search = hmat::searchI0(M, A, range0, range1, i0_used, i1_search, rank);
     ++rank;
 
-    il::Array2D<double> low_rank =
-        hmat::lowRankApproximation(M, range0, range1, A, B, rank);
-    const double forbenius_norm_low_rank = hmat::frobeniusNorm(low_rank);
+//    il::Array2D<double> low_rank =
+//        hmat::lowRankApproximation(M, range0, range1, A, B, rank);
+//    const double forbenius_norm_low_rank = hmat::frobeniusNorm(low_rank);
 
     //     Just to check
-    il::Array2D<double> difference_matrix =
-        hmat::fullDifference(M, range0, range1, A, B, rank);
-    const double frobenius_norm_difference =
-        hmat::frobeniusNorm(difference_matrix);
+//    il::Array2D<double> difference_matrix =
+//        hmat::fullDifference(M, range0, range1, A, B, rank);
+//    frobenius_norm_difference =
+//        hmat::frobeniusNorm(difference_matrix);
 
-    if (frobenius_norm_ab <= il::ipow<2>(epsilon) * frobenius_low_rank ||
+    if (i0_search == -1 || frobenius_norm_ab <= il::ipow<2>(epsilon) * frobenius_low_rank ||
         rank == il::min(n0, n1)) {
       break;
     }

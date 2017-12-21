@@ -12,8 +12,8 @@
 int main() {
   const il::int_t p = 1;
   const il::int_t dim = 1;
-  const il::int_t n = 128;
-  const il::int_t leaf_max_size = 8;
+  const il::int_t n = 1024 * 256;
+  const il::int_t leaf_max_size = 128;
 
   // We construct the positions of the points.
   il::Array2D<double> node{n, dim};
@@ -39,6 +39,7 @@ int main() {
   const double epsilon = 0.1;
   const hmat::HMatrix<double> H = hmat::build(M, quad_tree, epsilon);
 
+  const double cr = H.compressionRatio();
 
   //  const il::int_t n0 = 10;
   //  const il::int_t n1 = 10;
@@ -72,6 +73,8 @@ int main() {
   //
   //  il::Array<double> x{2 * n, 1.0};
   //  il::Array<double> y = H.dot(x);
+
+  std::cout << "Compression ratio: " << cr << std::endl;
 
   return 0;
 }

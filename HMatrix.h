@@ -74,15 +74,18 @@ HMatrix<T>::HMatrix(std::unique_ptr<hmat::HMatrix<T>> M00,
 
 template <typename T>
 il::int_t HMatrix<T>::nbStoredElements() const {
+  const il::int_t total_size = size(0) * size(1);
+  il::int_t ans;
+
   switch (type_) {
     case hmat::HMatrixType::LowRank:
-      return (A_.size(0) + B_.size(1)) * A_.size(1);
+      ans = (A_.size(0) + B_.size(1)) * A_.size(1);
       break;
     case hmat::HMatrixType::FullRank:
-      return F_.size(0) * F_.size(1);
+      ans = F_.size(0) * F_.size(1);
       break;
     case hmat::HMatrixType::HMatrix:
-      return submatrix_(0, 0)->nbStoredElements() +
+      ans = submatrix_(0, 0)->nbStoredElements() +
              submatrix_(1, 0)->nbStoredElements() +
              submatrix_(0, 1)->nbStoredElements() +
              submatrix_(1, 1)->nbStoredElements();
@@ -90,6 +93,8 @@ il::int_t HMatrix<T>::nbStoredElements() const {
     default:
       IL_UNREACHABLE;
   }
+
+  return ans;
 }
 
 template <typename T>

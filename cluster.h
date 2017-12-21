@@ -32,6 +32,7 @@ inline double distance(const il::Array2D<double>& node, il::Range range_0,
                 il::ipow<2>(il::max(0.0, bound_0.min - bound_1.max));
   }
   distance = std::sqrt(distance);
+  return distance;
 }
 
 inline double diameter(const il::Array2D<double>& node, il::Range range) {
@@ -201,10 +202,10 @@ inline void matrixClustering_aux(const il::Array2D<double>& node,
                            btree.leftNode(k0), btree.leftNode(k1), il::io,
                            qtree);
       matrixClustering_aux(node, btree, eta, qtree.child(k, 1),
-                           btree.leftNode(k0), btree.rightNode(k1), il::io,
+                           btree.rightNode(k0), btree.leftNode(k1), il::io,
                            qtree);
       matrixClustering_aux(node, btree, eta, qtree.child(k, 2),
-                           btree.rightNode(k0), btree.leftNode(k1), il::io,
+                           btree.leftNode(k0), btree.rightNode(k1), il::io,
                            qtree);
       matrixClustering_aux(node, btree, eta, qtree.child(k, 3),
                            btree.rightNode(k0), btree.rightNode(k1), il::io,
