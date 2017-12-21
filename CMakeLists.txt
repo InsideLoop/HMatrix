@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(HMatrix)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 set(IL_BLAS 1)
 set(IL_MKL 1)
@@ -38,6 +38,7 @@ endif()
 add_executable(HMatrix
         adaptiveCrossApproximation.h
         HMatrix.h
+        MatrixType.h
         cluster.h
         cluster.cpp
         QuadTree.h

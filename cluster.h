@@ -9,6 +9,9 @@
 #include <il/StaticArray.h>
 #include <il/algorithmArray2D.h>
 #include "QuadTree.h"
+#include "MatrixType.h"
+
+namespace hmat {
 
 inline double distance(const il::Array2D<double>& node, il::Range range_0,
                        il::Range range_1) {
@@ -182,7 +185,6 @@ struct Reordering {
 
 Reordering clustering(il::int_t leaf_size, il::io_t, il::Array2D<double>& node);
 
-enum class MatrixType { LowRank, FullRank, HMatrix };
 
 inline void matrixClustering_aux(const il::Array2D<double>& node,
                                  const BinaryTree& btree, double eta,
@@ -314,6 +316,8 @@ Reordering clustering_bis(il::int_t leaf_size, il::io_t,
                      node);
 
   return reordering;
+}
+
 }
 
 #endif  // HMATRIX_CLUSTER_H

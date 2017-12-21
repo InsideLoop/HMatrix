@@ -33,9 +33,10 @@ struct SmallRank {
 
 template <il::int_t p>
 SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
+                                             il::Range range0, il::Range range1,
                                              double epsilon) {
-  const il::int_t n0 = M.size(0);
-  const il::int_t n1 = M.size(1);
+  const il::int_t n0 = range0.end - range0.begin;
+  const il::int_t n1 = range1.end - range1.begin;
 
   il::Array2D<double> A{n0 * p, 0};
   il::Array2D<double> B{0, n1 * p};
@@ -51,7 +52,8 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     // In the Row i0_search of the matrix M - Sum_{k = 0}^rank Ak cross Bk
     // we search for the p x p matrix whose lowest singular value is the highest
     //
-    const il::int_t i1_search = hmat::searchI1(M, A, B, i0_search, i1_used);
+    const il::int_t i1_search =
+        hmat::searchI1(M, A, B, range0, range1, i0_search, i1_used);
     if (i1_search == -1) {
       // We don't have any pivot
       IL_UNREACHABLE;
@@ -64,7 +66,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     // Otherwise, we would have gotten i1_search == -1
     //
     il::StaticArray2D<double, p, p> matrix =
-        hmat::residual(M, A, B, i0_search, i1_search, rank);
+        hmat::residual(M, A, B, range0, range1, i0_search, i1_search, rank);
     il::Status status{};
     il::LU<il::StaticArray2D<double, p, p>> lu{matrix, il::io, status};
     status.abortOnError();
@@ -76,7 +78,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     A.resize(n0 * p, (rank + 1) * p);
     for (il::int_t i0 = 0; i0 < n0; ++i0) {
       il::StaticArray2D<double, p, p> matrix =
-          hmat::residual(M, A, B, i0, i1_search, rank);
+          hmat::residual(M, A, B, range0, range1, i0, i1_search, rank);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
           A(i0 * p + b0, rank * p + b1) = matrix(b0, b1);
@@ -86,7 +88,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     B.resize((rank + 1) * p, n1 * p);
     for (il::int_t i1 = 0; i1 < n1; ++i1) {
       il::StaticArray2D<double, p, p> matrix =
-          hmat::residual(M, A, B, i0_search, i1, rank);
+          hmat::residual(M, A, B, range0, range1, i0_search, i1, rank);
       matrix = il::dot(gamma, matrix);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
@@ -145,11 +147,13 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     i0_search = hmat::searchI0(M, A, i0_used, i1_search, rank);
     ++rank;
 
-    il::Array2D<double> low_rank = hmat::lowRankApproximation(M, A, B, rank);
+    il::Array2D<double> low_rank =
+        hmat::lowRankApproximation(M, range0, range1, A, B, rank);
     const double forbenius_norm_low_rank = hmat::frobeniusNorm(low_rank);
 
     //     Just to check
-    il::Array2D<double> difference_matrix = hmat::fullDifference(M, A, B, rank);
+    il::Array2D<double> difference_matrix =
+        hmat::fullDifference(M, range0, range1, A, B, rank);
     const double frobenius_norm_difference =
         hmat::frobeniusNorm(difference_matrix);
 

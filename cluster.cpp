@@ -2,8 +2,10 @@
 
 #include <limits>
 
+namespace hmat {
+
 void aux_clustering(il::int_t k, il::int_t leaf_size, il::io_t,
-                    Reordering& reordering, il::Array2D<double>& node) {
+                    Reordering &reordering, il::Array2D<double> &node) {
   const il::int_t i_begin = reordering.partition.begin(k);
   const il::int_t i_end = reordering.partition.end(k);
 
@@ -84,7 +86,7 @@ void aux_clustering(il::int_t k, il::int_t leaf_size, il::io_t,
 }
 
 Reordering clustering(il::int_t leaf_size, il::io_t,
-                      il::Array2D<double>& node) {
+                      il::Array2D<double> &node) {
   const il::int_t nb_nodes = node.size(0);
 
   Reordering reordering{nb_nodes, leaf_size};
@@ -92,4 +94,6 @@ Reordering clustering(il::int_t leaf_size, il::io_t,
                  node);
 
   return reordering;
+}
+
 }

@@ -2,7 +2,6 @@
 #define HMATRIX_BINARYTREE_H
 
 #include <il/Array.h>
-#include <il/Range.h>
 
 namespace hmat {
 

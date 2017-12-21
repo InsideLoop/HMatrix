@@ -26,9 +26,11 @@ template <il::int_t p>
 il::StaticArray2D<double, p, p> residual(const hmat::Matrix<p>& M,
                                          const il::Array2D<double>& A,
                                          const il::Array2D<double>& B,
+                                         il::Range range0, il::Range range1,
                                          il::int_t i0, il::int_t i1,
                                          il::int_t r) {
-  il::StaticArray2D<double, p, p> matrix = M(i0, i1);
+  il::StaticArray2D<double, p, p> matrix =
+      M(range0.begin + i0, range1.begin + i1);
   if (r >= 1) {
     il::Array2DEdit<double> reference_matrix = matrix.edit();
     il::blas(-1.0, A.view(il::Range{i0 * p, (i0 + 1) * p}, il::Range{0, r * p}),
@@ -56,10 +58,11 @@ il::StaticArray2D<double, p, p> lowRankSubmatrix(const hmat::Matrix<p>& M,
 
 template <il::int_t p>
 il::int_t searchI1(const hmat::Matrix<p>& M, const il::Array2D<double>& A,
-                   const il::Array2D<double>& B, il::int_t i0_search,
+                   const il::Array2D<double>& B, il::Range range0,
+                   il::Range range1, il::int_t i0_search,
                    const il::Array<il::int_t>& i1_used) {
-  const il::int_t n0 = M.size(0);
-  const il::int_t n1 = M.size(1);
+  const il::int_t n0 = range0.end - range0.begin;
+  const il::int_t n1 = range1.end - range1.begin;
   const il::int_t rank = i1_used.size();
 
   il::int_t i1_search = -1;
@@ -75,7 +78,7 @@ il::int_t searchI1(const hmat::Matrix<p>& M, const il::Array2D<double>& A,
       // To optimize: We don't need to compute the full list of singular
       // values. Only the smallest singular value needs to be computed
       il::StaticArray2D<double, p, p> matrix =
-          residual(M, A, B, i0_search, i1, rank);
+          residual(M, A, B, range0, range1, i0_search, i1, rank);
 
       il::Status status{};
       il::StaticArray<double, p> singular_values =
@@ -136,13 +139,15 @@ il::int_t searchI0(const hmat::Matrix<p>& M, const il::Array2D<double>& A,
 }
 
 template <il::int_t p>
-il::Array2D<double> fullMatrix(const hmat::Matrix<p>& M) {
-  const il::int_t n0 = M.size(0);
-  const il::int_t n1 = M.size(1);
+il::Array2D<double> fullMatrix(const hmat::Matrix<p>& M, il::Range range0,
+                               il::Range range1) {
+  const il::int_t n0 = range0.end - range0.begin;
+  const il::int_t n1 = range1.end - range1.begin;
   il::Array2D<double> ans{n0 * p, n1 * p};
   for (il::int_t i1 = 0; i1 < n1; ++i1) {
     for (il::int_t i0 = 0; i0 < n0; ++i0) {
-      il::StaticArray2D<double, p, p> local = M(i0, i1);
+      il::StaticArray2D<double, p, p> local =
+          M(range0.begin + i0, range1.begin + i1);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
           ans(i0 * p + b0, i1 * p + b1) = local(b0, b1);
@@ -155,11 +160,12 @@ il::Array2D<double> fullMatrix(const hmat::Matrix<p>& M) {
 
 template <il::int_t p>
 il::Array2D<double> lowRankApproximation(const hmat::Matrix<p>& M,
+                                         il::Range range0, il::Range range1,
                                          const il::Array2D<double>& A,
                                          const il::Array2D<double>& B,
                                          il::int_t r) {
-  const il::int_t n0 = M.size(0);
-  const il::int_t n1 = M.size(1);
+  const il::int_t n0 = range0.end - range0.begin;
+  const il::int_t n1 = range1.end - range1.begin;
   il::Array2D<double> ans{n0 * p, n1 * p};
   for (il::int_t i1 = 0; i1 < n1; ++i1) {
     for (il::int_t i0 = 0; i0 < n0; ++i0) {
@@ -176,15 +182,17 @@ il::Array2D<double> lowRankApproximation(const hmat::Matrix<p>& M,
 }
 
 template <il::int_t p>
-il::Array2D<double> fullDifference(const hmat::Matrix<p>& M,
+il::Array2D<double> fullDifference(const hmat::Matrix<p>& M, il::Range range0,
+                                   il::Range range1,
                                    const il::Array2D<double>& A,
                                    const il::Array2D<double>& B, il::int_t r) {
-  const il::int_t n0 = M.size(0);
-  const il::int_t n1 = M.size(1);
+  const il::int_t n0 = range0.end - range0.begin;
+  const il::int_t n1 = range1.end - range1.begin;
   il::Array2D<double> ans{n0 * p, n1 * p};
   for (il::int_t i1 = 0; i1 < n1; ++i1) {
     for (il::int_t i0 = 0; i0 < n0; ++i0) {
-      il::StaticArray2D<double, p, p> local = residual(M, A, B, i0, i1, r);
+      il::StaticArray2D<double, p, p> local =
+          residual(M, A, B, range0, range1, i0, i1, r);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
           ans(i0 * p + b0, i1 * p + b1) = local(b0, b1);
