@@ -27,12 +27,14 @@ class HMatrix {
           std::unique_ptr<hmat::HMatrix<T>> M11);
   il::int_t size(il::int_t d) const;
   double compressionRatio() const;
+  il::Array2D<double> denseMatrix() const;
   hmat::HMatrixType type() const;
-  il::Array<T> dot(const il::Array<T>& x) const;
+  il::Array<T> dot(const il::Array<T> &x) const;
+  void dot(const il::ArrayView<T> &x, il::io_t, il::ArrayEdit<T> y) const;
 
  private:
+  void constructDenseMatrix(il::io_t, il::Array2DEdit<double> m) const;
   il::int_t nbStoredElements() const;
-  void dot(const il::ArrayView<T>& x, il::io_t, il::ArrayEdit<T> y) const;
 };
 
 template <typename T>
@@ -49,7 +51,10 @@ HMatrix<T>::HMatrix(il::Array2D<T> F)
 template <typename T>
 HMatrix<T>::HMatrix(il::Array2D<T> A, il::Array2D<T> B)
     : A_{std::move(A)}, B_{std::move(B)}, F_{}, submatrix_{} {
-  IL_EXPECT_MEDIUM(A.size(1) == B.size(0));
+  IL_EXPECT_MEDIUM(A_.size(1) == B_.size(0));
+  IL_EXPECT_MEDIUM(A_.size(0) > 0);
+  IL_EXPECT_MEDIUM(A_.size(1) >= 0);
+  IL_EXPECT_MEDIUM(B_.size(1) > 0);
 
   type_ = hmat::HMatrixType::LowRank;
 }
@@ -86,9 +91,9 @@ il::int_t HMatrix<T>::nbStoredElements() const {
       break;
     case hmat::HMatrixType::HMatrix:
       ans = submatrix_(0, 0)->nbStoredElements() +
-             submatrix_(1, 0)->nbStoredElements() +
-             submatrix_(0, 1)->nbStoredElements() +
-             submatrix_(1, 1)->nbStoredElements();
+            submatrix_(1, 0)->nbStoredElements() +
+            submatrix_(0, 1)->nbStoredElements() +
+            submatrix_(1, 1)->nbStoredElements();
       break;
     default:
       IL_UNREACHABLE;
@@ -131,7 +136,7 @@ hmat::HMatrixType HMatrix<T>::type() const {
 }
 
 template <typename T>
-il::Array<T> HMatrix<T>::dot(const il::Array<T>& x) const {
+il::Array<T> HMatrix<T>::dot(const il::Array<T> &x) const {
   IL_EXPECT_FAST(size(1) == x.size());
 
   il::Array<T> y{size(0), 0.0};
@@ -143,13 +148,56 @@ il::Array<T> HMatrix<T>::dot(const il::Array<T>& x) const {
 }
 
 template <typename T>
-void HMatrix<T>::dot(const il::ArrayView<T>& x, il::io_t,
+il::Array2D<double> HMatrix<T>::denseMatrix() const {
+  il::Array2D<double> ans{size(0), size(1), 0.0};
+  constructDenseMatrix(il::io, ans.edit());
+  return ans;
+}
+
+template <typename T>
+void HMatrix<T>::constructDenseMatrix(il::io_t,
+                                      il::Array2DEdit<double> m) const {
+  IL_EXPECT_FAST(size(0) == m.size(0));
+  IL_EXPECT_FAST(size(1) == m.size(1));
+
+  switch (type_) {
+    case hmat::HMatrixType::LowRank: {
+      il::blas(1.0, A_.view(), B_.view(), 0.0, il::io, m);
+    } break;
+    case hmat::HMatrixType::FullRank: {
+      for (il::int_t j = 0; j < size(1); ++j) {
+        for (il::int_t i = 0; i < size(0); ++i) {
+          m(i, j) = F_(i, j);
+        }
+      }
+    } break;
+    case hmat::HMatrixType::HMatrix: {
+      const il::int_t n00 = submatrix_(0, 0)->size(0);
+      const il::int_t n01 = submatrix_(1, 0)->size(0);
+      const il::int_t n10 = submatrix_(0, 0)->size(1);
+      const il::int_t n11 = submatrix_(0, 1)->size(1);
+      submatrix_(0, 0)->constructDenseMatrix(
+          il::io, m.edit(il::Range{0, n00}, il::Range{0, n10}));
+      submatrix_(0, 1)->constructDenseMatrix(
+          il::io, m.edit(il::Range{0, n00}, il::Range{n10, n10 + n11}));
+      submatrix_(1, 0)->constructDenseMatrix(
+          il::io, m.edit(il::Range{n00, n00 + n01}, il::Range{0, n10}));
+      submatrix_(1, 1)->constructDenseMatrix(
+          il::io, m.edit(il::Range{n00, n00 + n01}, il::Range{n10, n10 + n11}));
+    } break;
+    default:
+      IL_UNREACHABLE;
+  }
+}
+
+template <typename T>
+void HMatrix<T>::dot(const il::ArrayView<T> &x, il::io_t,
                      il::ArrayEdit<T> y) const {
   IL_EXPECT_FAST(size(1) == x.size());
 
   switch (type_) {
     case hmat::HMatrixType::LowRank: {
-      il::Array<T> tmp{B_.size(0)};
+      il::Array<T> tmp{B_.size(0), 0.0};
       il::blas(1.0, B_.view(), x, 1.0, il::io, tmp.edit());
       il::blas(1.0, A_.view(), tmp.view(), 1.0, il::io, y.edit());
     } break;
@@ -173,6 +221,11 @@ void HMatrix<T>::dot(const il::ArrayView<T>& x, il::io_t,
     default:
       IL_UNREACHABLE;
   }
+}
+
+inline il::Array<double> dot(const hmat::HMatrix<double> &h,
+                             const il::Array<double> &x) {
+  return h.dot(x);
 }
 
 }  // namespace hmat

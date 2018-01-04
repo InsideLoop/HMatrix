@@ -32,7 +32,7 @@ struct SmallRank {
 };
 
 template <il::int_t p>
-SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
+SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
                                              il::Range range0, il::Range range1,
                                              double epsilon) {
   const il::int_t n0 = range0.end - range0.begin;
@@ -45,7 +45,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
   il::Array<il::int_t> i1_used{};
 
   il::int_t rank = 0;
-  il::int_t i0_search = 0;
+  il::int_t i0_search = range0.begin;
   double frobenius_low_rank = 0.0;
   double frobenius_norm_difference = -1.0;
 
@@ -66,34 +66,53 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     // smallest singular value. The matrix we have has to be nonsingular.
     // Otherwise, we would have gotten i1_search == -1
     //
-    il::StaticArray2D<double, p, p> matrix =
+    il::StaticArray2D<double, p, p> pivot_matrix =
         hmat::residual(M, A, B, range0, range1, i0_search, i1_search, rank);
     il::Status status{};
-    il::LU<il::StaticArray2D<double, p, p>> lu{matrix, il::io, status};
+    il::LU<il::StaticArray2D<double, p, p>> lu{pivot_matrix, il::io, status};
     status.abortOnError();
     il::StaticArray2D<double, p, p> gamma = lu.inverse();
+
+    // Check if we have a finite matrix
+    // Be careful, as the error can raise only at the last minute with
+    // denormalized number
+    bool is_finite = true;
+    for (il::int_t i0 = 0; i0 < p; ++i0) {
+      for (il::int_t i1 = 0; i1 < p; ++i1) {
+        if (!std::isfinite(gamma(i0, i1))) {
+          is_finite = false;
+        }
+      }
+    }
+    if (!is_finite) {
+      break;
+    }
+
     // Just to check
-    il::StaticArray2D<double, p, p> check_identity = il::dot(gamma, matrix);
+    il::StaticArray2D<double, p, p> check_identity =
+        il::dot(gamma, pivot_matrix);
 
     // Update the Matrices A and B to take into account the new ranks
     A.resize(n0 * p, (rank + 1) * p);
-    for (il::int_t i0 = 0; i0 < n0; ++i0) {
+    for (il::int_t i0 = range0.begin; i0 < range0.end; ++i0) {
       il::StaticArray2D<double, p, p> matrix =
           hmat::residual(M, A, B, range0, range1, i0, i1_search, rank);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
-          A(i0 * p + b0, rank * p + b1) = matrix(b0, b1);
+          IL_EXPECT_MEDIUM(std::isfinite(matrix(b0, b1)));
+          A((i0 - range0.begin) * p + b0, rank * p + b1) = matrix(b0, b1);
         }
       }
     }
     B.resize((rank + 1) * p, n1 * p);
-    for (il::int_t i1 = 0; i1 < n1; ++i1) {
+    for (il::int_t i1 = range1.begin; i1 < range1.end; ++i1) {
       il::StaticArray2D<double, p, p> matrix =
           hmat::residual(M, A, B, range0, range1, i0_search, i1, rank);
       matrix = il::dot(gamma, matrix);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
-          B(rank * p + b0, i1 * p + b1) = matrix(b0, b1);
+          IL_EXPECT_MEDIUM(std::isfinite(matrix(b0, b1)));
+          B(rank * p + b0, (i1 - range1.begin) * p + b1) = matrix(b0, b1);
         }
       }
     }
@@ -148,21 +167,32 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p>& M,
     i0_search = hmat::searchI0(M, A, range0, range1, i0_used, i1_search, rank);
     ++rank;
 
-//    il::Array2D<double> low_rank =
-//        hmat::lowRankApproximation(M, range0, range1, A, B, rank);
-//    const double forbenius_norm_low_rank = hmat::frobeniusNorm(low_rank);
+    //    il::Array2D<double> low_rank =
+    //        hmat::lowRankApproximation(M, range0, range1, A, B, rank);
+    //    const double forbenius_norm_low_rank = hmat::frobeniusNorm(low_rank);
 
     //     Just to check
-//    il::Array2D<double> difference_matrix =
-//        hmat::fullDifference(M, range0, range1, A, B, rank);
-//    frobenius_norm_difference =
-//        hmat::frobeniusNorm(difference_matrix);
+    //    il::Array2D<double> difference_matrix =
+    //        hmat::fullDifference(M, range0, range1, A, B, rank);
+    //    frobenius_norm_difference =
+    //        hmat::frobeniusNorm(difference_matrix);
 
-    if (i0_search == -1 || frobenius_norm_ab <= il::ipow<2>(epsilon) * frobenius_low_rank ||
+    if (i0_search == -1 ||
+        frobenius_norm_ab <= il::ipow<2>(epsilon) * frobenius_low_rank ||
         rank == il::min(n0, n1)) {
       break;
     }
   }
+
+  //  il::Array2D<double> difference_matrix =
+  //      hmat::fullDifference(M, range0, range1, A, B, rank);
+  //  frobenius_norm_difference = hmat::frobeniusNorm(difference_matrix);
+  //  const double frobenius_norm_matrix =  frobeniusNorm(hmat::fullMatrix(M,
+  //  range0, range1));
+  //  IL_EXPECT_MEDIUM(std::isfinite(frobenius_norm_difference));
+  //  IL_EXPECT_MEDIUM(std::isfinite(frobenius_norm_matrix));
+  //  std::cout << "Relative Error: " << frobenius_norm_difference /
+  //  frobenius_norm_matrix << std::endl;
 
   return hmat::SmallRank<double>{std::move(A), std::move(B)};
 }

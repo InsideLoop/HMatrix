@@ -47,4 +47,5 @@ add_executable(HMatrix
         routines.h
         main.cpp)
 
+target_include_directories(HMatrix PRIVATE /home/ciardo/Documents/Projects/InsideLoop/InsideLoop)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
