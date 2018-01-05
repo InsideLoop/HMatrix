@@ -4,6 +4,7 @@
 
 #include <il/Timer.h>
 #include <il/linear_algebra/dense/factorization/LU.h>
+#include <il/linear_algebra/matrixFree/solver/Gmres.h>
 #include <il/linear_algebra/matrixFree/solver/MatrixFreeGmres.h>
 
 #include "HMatrix.h"
@@ -46,22 +47,120 @@ class DenseMatrix {
   }
 };
 
+class FedericoMatrix : public il::ArrayFunctor<double> {
+ private:
+  il::int_t nb_elements_;
+  il::Array2D<double> collocation_;
+  hfp2d::ElasticProperties elastic_properties_;
+  bool diagonal_;
+
+ public:
+  FedericoMatrix(const il::Array2D<double> &collocation,
+                 const hfp2d::ElasticProperties &elastic_properties,
+                 bool diagonal) {
+    IL_EXPECT_FAST(collocation.size(1) == 2);
+
+    nb_elements_ = collocation.size(0);
+    collocation_ = collocation;
+    elastic_properties_ = elastic_properties;
+    diagonal_ = diagonal;
+  };
+  il::int_t size(il::int_t k) const { return nb_elements_; }
+  il::int_t sizeInput() const override { return 2 * nb_elements_; }
+  il::int_t sizeOutput() const override { return 2 * nb_elements_; }
+  hfp2d::SegmentData segmentData(il::int_t i) const {
+    il::StaticArray2D<double, 2, 2> Xs{};
+    const double t = (il::pi / nb_elements_) / 2;
+    const double cost = std::cos(t);
+    const double sint = std::sin(t);
+
+    Xs(0, 0) = collocation_(i, 0) * cost + collocation_(i, 1) * sint;
+    Xs(0, 1) = -collocation_(i, 0) * sint + collocation_(i, 1) * cost;
+    Xs(1, 0) = collocation_(i, 0) * cost - collocation_(i, 1) * sint;
+    Xs(1, 1) = collocation_(i, 0) * sint + collocation_(i, 1) * cost;
+
+    const il::int_t interpolation_order = 0;
+    return hfp2d::SegmentData(Xs, interpolation_order);
+  };
+  il::StaticArray2D<double, 2, 2> operator()(il::int_t i0, il::int_t i1) const {
+    IL_EXPECT_FAST(static_cast<std::size_t>(i0) <
+                   static_cast<std::size_t>(nb_elements_));
+    IL_EXPECT_FAST(static_cast<std::size_t>(i1) <
+                   static_cast<std::size_t>(nb_elements_));
+
+    if (i0 != i1 && diagonal_) {
+      return il::StaticArray2D<double, 2, 2>{0.0};
+    }
+    const double ker_options = 1.0;
+    return hfp2d::normal_shear_stress_kernel_s3d_dp0_dd_nodal(
+        segmentData(i1), segmentData(i0), 0, 0, elastic_properties_,
+        ker_options);
+  }
+  virtual void operator()(il::ArrayView<double> x, il::io_t,
+                          il::ArrayEdit<double> y) const override {
+    IL_EXPECT_FAST(x.size() == 2 * nb_elements_);
+    IL_EXPECT_FAST(y.size() == 2 * nb_elements_);
+
+    for (il::int_t i0 = 0; i0 < nb_elements_; ++i0) {
+      y[2 * i0] = 0.0;
+      y[2 * i0 + 1] = 0.0;
+      for (il::int_t i1 = 0; i1 < nb_elements_; ++i1) {
+        il::StaticArray2D<double, 2, 2> matrix = (*this)(i0, i1);
+        y[2 * i0] += matrix(0, 0) * x[2 * i1] + matrix(0, 1) * x[2 * i1 + 1];
+        y[2 * i0 + 1] +=
+            matrix(1, 0) * x[2 * i1] + matrix(1, 1) * x[2 * i1 + 1];
+      }
+    }
+  }
+};
+
 int main() {
-  const il::int_t p = 1;
-  const il::int_t dim = 1;
-  //  const il::int_t n = 1024 * 256;
-  const il::int_t n = 16 * 1024;
-  const il::int_t leaf_max_size = 128;
+  const il::int_t p = 2;
+  const il::int_t dim = 2;
+  const il::int_t n = 100;
+  const il::int_t leaf_max_size = 2;
+  const double radius = 1.0;
 
   // We construct the positions of the points.
-  il::Array2D<double> node{n, dim};
-  for (il::int_t i = 0; i < n; ++i) {
-    node(i, 0) = i * (1.0 / (n - 1));
+  il::Array2D<double> node{n + 1, dim};
+  for (il::int_t i = 0; i < n + 1; ++i) {
+    node(i, 0) = radius * std::cos((il::pi * i) / n);
+    node(i, 1) = radius * std::sin((il::pi * i) / n);
   }
 
+  il::Array2D<double> collocation{n, dim};
+  for (il::int_t i = 0; i < n; ++i) {
+    collocation(i, 0) = radius * std::cos((il::pi * (i + 0.5)) / n);
+    collocation(i, 1) = radius * std::sin((il::pi * (i + 0.5)) / n);
+  }
+
+  const double young_modulus = 1.0;
+  const double poisson_ratio = 0.1;
+  hfp2d::ElasticProperties elastic_properties{young_modulus, poisson_ratio};
+
+  const FedericoMatrix m{collocation, elastic_properties, false};
+  const FedericoMatrix preconditionner{collocation, elastic_properties, true};
+
+  const double relative_precision = 1.0e-1;
+  const il::int_t max_nb_iterations = 100;
+  const il::int_t restart_iteration = 10;
+  il::Gmres gmres_solver{relative_precision, max_nb_iterations,
+                         restart_iteration};
+  const il::Array<double> y{p * n, 1.0};
+  il::Array<double> x{p * n};
+
+  const bool use_preconditionner = true;
+  const bool use_x_as_initial_value = false;
+  gmres_solver.solve(m, preconditionner, y.view(), use_preconditionner,
+                     use_x_as_initial_value, il::io, x.edit());
+
+  std::cout << "Number of iterations: " << gmres_solver.nbIterations()
+            << std::endl;
+
+  /*
   // We construct the clustering of the points.
   const hmat::Reordering reordering =
-      hmat::clustering(leaf_max_size, il::io, node);
+      hmat::clustering(leaf_max_size, il::io, collocation);
 
   // And then, the clustering of the matrix, only from the geomtry of the
   // points.
@@ -73,7 +172,7 @@ int main() {
 
   // We construct the matrix we need to compress
   const double lambda = 2.0 * il::ipow<2>(static_cast<double>(n - 1));
-  const hmat::Matrix<1> M{node, lambda};
+  const hmat::Matrix<2> M{collocation, elastic_properties};
 
   // We build the H-Matrix
   const double epsilon = 0.0;
@@ -95,7 +194,7 @@ int main() {
   const double norm_h = il::norm(h_full, il::Norm::Linf);
   const double condition_number = lu.conditionNumber(il::Norm::Linf, norm_h);
 
-  const il::Array<double> x{n, 1.0};
+  const il::Array<double> x{p * n, 1.0};
   const il::Array<double> y_full = il::dot(h_full, x);
   const il::Array<double> y_h = hmat::dot(h, x);
   const double relative_error_y = relativeError(y_full, y_h);
@@ -127,6 +226,7 @@ int main() {
   std::cout << "Number of iterations Full: " << nb_interations_f << std::endl;
   std::cout << "Number of iterations HMatrix: " << nb_interations_h
             << std::endl;
+            */
 
   return 0;
 }

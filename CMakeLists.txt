@@ -36,6 +36,9 @@ elseif (IL_OPENBLAS)
 endif()
 
 add_executable(HMatrix
+        /home/ciardo/Documents/Projects/InsideLoop/InsideLoop/il/linear_algebra/matrixFree/solver/Gmres.cpp
+        src/core/Utilities.cpp
+        src/elasticity/Simplified3D.cpp
         adaptiveCrossApproximation.h
         HMatrix.h
         MatrixType.h
@@ -47,5 +50,5 @@ add_executable(HMatrix
         routines.h
         main.cpp)
 
-target_include_directories(HMatrix PRIVATE /home/ciardo/Documents/Projects/InsideLoop/InsideLoop)
+target_include_directories(HMatrix PRIVATE /home/ciardo/Documents/Projects/InsideLoop/InsideLoop /home/ciardo/Documents/Projects/EPFL/HMatrix)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
