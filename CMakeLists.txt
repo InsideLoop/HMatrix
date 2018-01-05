@@ -48,7 +48,7 @@ add_executable(HMatrix
         BinaryTree.h
         Matrix.h
         routines.h
-        main.cpp)
+        main.cpp blas/HMatrix.h)
 
 target_include_directories(HMatrix PRIVATE /home/ciardo/Documents/Projects/InsideLoop/InsideLoop /home/ciardo/Documents/Projects/EPFL/HMatrix)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
