@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.8)
 project(HMatrix)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -36,7 +36,7 @@ elseif (IL_OPENBLAS)
 endif()
 
 add_executable(HMatrix
-        /home/ciardo/Documents/Projects/InsideLoop/InsideLoop/il/linear_algebra/matrixFree/solver/Gmres.cpp
+        /home/fayard/Documents/Projects/InsideLoop/InsideLoop/il/linearAlgebra/matrixFree/solver/Gmres.cpp
         src/core/Utilities.cpp
         src/elasticity/Simplified3D.cpp
         adaptiveCrossApproximation.h
@@ -50,5 +50,5 @@ add_executable(HMatrix
         routines.h
         main.cpp blas/HMatrix.h)
 
-target_include_directories(HMatrix PRIVATE /home/ciardo/Documents/Projects/InsideLoop/InsideLoop /home/ciardo/Documents/Projects/EPFL/HMatrix)
+target_include_directories(HMatrix PRIVATE /home/fayard/Documents/Projects/InsideLoop/InsideLoop /home/fayard/Documents/Projects/EPFL/HMatrix)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})

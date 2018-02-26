@@ -59,8 +59,8 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
       // We don't have any pivot
       break;
     }
-    i0_used.append(i0_search);
-    i1_used.append(i1_search);
+    i0_used.Append(i0_search);
+    i1_used.Append(i1_search);
 
     // Now, we compute the inverse for the pxp-matrix which has the largest
     // smallest singular value. The matrix we have has to be nonsingular.
@@ -70,7 +70,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
         hmat::residual(M, A, B, range0, range1, i0_search, i1_search, rank);
     il::Status status{};
     il::LU<il::StaticArray2D<double, p, p>> lu{pivot_matrix, il::io, status};
-    status.abortOnError();
+    status.AbortOnError();
     il::StaticArray2D<double, p, p> gamma = lu.inverse();
 
     // Check if we have a finite matrix
@@ -93,7 +93,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
         il::dot(gamma, pivot_matrix);
 
     // Update the Matrices A and B to take into account the new ranks
-    A.resize(n0 * p, (rank + 1) * p);
+    A.Resize(n0 * p, (rank + 1) * p);
     for (il::int_t i0 = range0.begin; i0 < range0.end; ++i0) {
       il::StaticArray2D<double, p, p> matrix =
           hmat::residual(M, A, B, range0, range1, i0, i1_search, rank);
@@ -104,7 +104,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
         }
       }
     }
-    B.resize((rank + 1) * p, n1 * p);
+    B.Resize((rank + 1) * p, n1 * p);
     for (il::int_t i1 = range1.begin; i1 < range1.end; ++i1) {
       il::StaticArray2D<double, p, p> matrix =
           hmat::residual(M, A, B, range0, range1, i0_search, i1, rank);
@@ -123,13 +123,13 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
              A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
              il::MatrixOperator::Tranpose,
              A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
-             0.0, il::io, frobenius_A.edit());
+             0.0, il::io, frobenius_A.Edit());
     // New value for the norm of B
     il::StaticArray2D<double, p, p> frobenius_B{0.0};
     il::blas(1.0,
              B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
              B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
-             il::MatrixOperator::Tranpose, 0.0, il::io, frobenius_B.edit());
+             il::MatrixOperator::Tranpose, 0.0, il::io, frobenius_B.Edit());
     // compute ||A_k B_k||^2
     double frobenius_norm_ab = 0.0;
     for (il::int_t b1 = 0; b1 < p; ++b1) {
@@ -142,7 +142,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     for (il::int_t r = 0; r < rank; ++r) {
       // Compute Ar*.Arank
       il::StaticArray2D<double, p, p> ars_arank{0.0};
-      il::Array2DEdit<double> ref_ars_arank = ars_arank.edit();
+      il::Array2DEdit<double> ref_ars_arank = ars_arank.Edit();
       il::blas(
           1.0, A.view(il::Range{0, n0 * p}, il::Range{r * p, (r + 1) * p}),
           il::MatrixOperator::Tranpose,
@@ -150,7 +150,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
           0.0, il::io, ref_ars_arank);
       // Compute (Ar*.Arank).Brank
       il::Array2D<double> ars_arank_brank{p, n1 * p, 0.0};
-      il::Array2DEdit<double> ref_ars_arank_brank = ars_arank_brank.edit();
+      il::Array2DEdit<double> ref_ars_arank_brank = ars_arank_brank.Edit();
       il::blas(
           1.0, ars_arank.view(),
           B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),

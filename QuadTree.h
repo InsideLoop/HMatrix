@@ -37,7 +37,7 @@ inline void QuadTree::insert(il::int_t i, il::Range range_0, il::Range range_1,
   const il::int_t n = data_.size();
   if (i >= n) {
     const il::int_t new_n = 4 * n + 1;
-    data_.resize(new_n);
+    data_.Resize(new_n);
     for (il::int_t j = n; j < new_n; ++j) {
       data_[j].range_row.begin = -1;
     }

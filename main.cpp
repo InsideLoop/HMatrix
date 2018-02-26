@@ -3,9 +3,9 @@
 #include <random>
 
 #include <il/Timer.h>
-#include <il/linear_algebra/dense/factorization/LU.h>
-#include <il/linear_algebra/matrixFree/solver/Gmres.h>
-#include <il/linear_algebra/matrixFree/solver/MatrixFreeGmres.h>
+#include <il/linearAlgebra/dense/factorization/LU.h>
+#include <il/linearAlgebra/matrixFree/solver/Gmres.h>
+#include <il/linearAlgebra/matrixFree/solver/MatrixFreeGmres.h>
 
 #include "HMatrix.h"
 #include "adaptiveCrossApproximation.h"
@@ -151,8 +151,8 @@ int main() {
 
   const bool use_preconditionner = true;
   const bool use_x_as_initial_value = false;
-  gmres_solver.solve(m, preconditionner, y.view(), use_preconditionner,
-                     use_x_as_initial_value, il::io, x.edit());
+  gmres_solver.Solve(m, preconditionner, y.view(), use_preconditionner,
+                     use_x_as_initial_value, il::io, x.Edit());
 
   std::cout << "Number of iterations: " << gmres_solver.nbIterations()
             << std::endl;
@@ -190,7 +190,7 @@ int main() {
 
   il::Status status{};
   il::LU<il::Array2D<double>> lu{h_full, il::io, status};
-  status.abortOnError();
+  status.AbortOnError();
   const double norm_h = il::norm(h_full, il::Norm::Linf);
   const double condition_number = lu.conditionNumber(il::Norm::Linf, norm_h);
 

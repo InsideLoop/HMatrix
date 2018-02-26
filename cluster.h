@@ -109,7 +109,7 @@ inline BinaryTree::BinaryTree(il::int_t nb_nodes, il::int_t leaf_size) {
 
   initial_depth_ = depth;
   depth_ = depth;
-  data_.resize(n);
+  data_.Resize(n);
   for (il::int_t i = 0; i < n; ++i) {
     data_[i] = -1;
   }
@@ -128,7 +128,7 @@ inline void BinaryTree::addLeft(il::int_t k, il::int_t i_begin,
 
   const il::int_t k_left = 2 * k + 1;
   if (2 * (2 * k_left + 1) >= data_.size()) {
-    data_.resize(2 * data_.size() + 1, -1);
+    data_.Resize(2 * data_.size() + 1, -1);
     ++depth_;
   }
   data_[2 * k_left] = i_begin;
@@ -141,7 +141,7 @@ inline void BinaryTree::addRight(il::int_t k, il::int_t i_begin,
 
   const il::int_t k_right = 2 * k + 2;
   if (2 * (2 * k_right + 1) >= data_.size()) {
-    data_.resize(2 * data_.size() + 1, -1);
+    data_.Resize(2 * data_.size() + 1, -1);
     ++depth_;
   }
   data_[2 * k_right] = i_begin;

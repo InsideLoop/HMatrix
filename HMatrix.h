@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <il/linear_algebra/dense/blas/blas.h>
+#include <il/linearAlgebra/dense/blas/blas.h>
 
 namespace hmat {
 
@@ -141,7 +141,7 @@ il::Array<T> HMatrix<T>::dot(const il::Array<T> &x) const {
 
   il::Array<T> y{size(0), 0.0};
   il::ArrayView<T> x_view = x.view();
-  il::ArrayEdit<T> y_edit = y.edit();
+  il::ArrayEdit<T> y_edit = y.Edit();
   dot(x_view, il::io, y_edit);
 
   return y;
@@ -150,7 +150,7 @@ il::Array<T> HMatrix<T>::dot(const il::Array<T> &x) const {
 template <typename T>
 il::Array2D<double> HMatrix<T>::denseMatrix() const {
   il::Array2D<double> ans{size(0), size(1), 0.0};
-  constructDenseMatrix(il::io, ans.edit());
+  constructDenseMatrix(il::io, ans.Edit());
   return ans;
 }
 
@@ -177,13 +177,13 @@ void HMatrix<T>::constructDenseMatrix(il::io_t,
       const il::int_t n10 = submatrix_(0, 0)->size(1);
       const il::int_t n11 = submatrix_(0, 1)->size(1);
       submatrix_(0, 0)->constructDenseMatrix(
-          il::io, m.edit(il::Range{0, n00}, il::Range{0, n10}));
+          il::io, m.Edit(il::Range{0, n00}, il::Range{0, n10}));
       submatrix_(0, 1)->constructDenseMatrix(
-          il::io, m.edit(il::Range{0, n00}, il::Range{n10, n10 + n11}));
+          il::io, m.Edit(il::Range{0, n00}, il::Range{n10, n10 + n11}));
       submatrix_(1, 0)->constructDenseMatrix(
-          il::io, m.edit(il::Range{n00, n00 + n01}, il::Range{0, n10}));
+          il::io, m.Edit(il::Range{n00, n00 + n01}, il::Range{0, n10}));
       submatrix_(1, 1)->constructDenseMatrix(
-          il::io, m.edit(il::Range{n00, n00 + n01}, il::Range{n10, n10 + n11}));
+          il::io, m.Edit(il::Range{n00, n00 + n01}, il::Range{n10, n10 + n11}));
     } break;
     default:
       IL_UNREACHABLE;
@@ -198,11 +198,11 @@ void HMatrix<T>::dot(const il::ArrayView<T> &x, il::io_t,
   switch (type_) {
     case hmat::HMatrixType::LowRank: {
       il::Array<T> tmp{B_.size(0), 0.0};
-      il::blas(1.0, B_.view(), x, 1.0, il::io, tmp.edit());
-      il::blas(1.0, A_.view(), tmp.view(), 1.0, il::io, y.edit());
+      il::blas(1.0, B_.view(), x, 1.0, il::io, tmp.Edit());
+      il::blas(1.0, A_.view(), tmp.view(), 1.0, il::io, y.Edit());
     } break;
     case hmat::HMatrixType::FullRank: {
-      il::blas(1.0, F_.view(), x, 1.0, il::io, y.edit());
+      il::blas(1.0, F_.view(), x, 1.0, il::io, y.Edit());
     } break;
     case hmat::HMatrixType::HMatrix: {
       const il::int_t n00 = submatrix_(0, 0)->size(0);
@@ -211,8 +211,8 @@ void HMatrix<T>::dot(const il::ArrayView<T> &x, il::io_t,
       const il::int_t n11 = submatrix_(0, 1)->size(1);
       il::ArrayView<T> x0 = x.view(il::Range{0, n10});
       il::ArrayView<T> x1 = x.view(il::Range{n10, n10 + n11});
-      il::ArrayEdit<T> y0 = y.edit(il::Range{0, n00});
-      il::ArrayEdit<T> y1 = y.edit(il::Range{n00, n00 + n01});
+      il::ArrayEdit<T> y0 = y.Edit(il::Range{0, n00});
+      il::ArrayEdit<T> y1 = y.Edit(il::Range{n00, n00 + n01});
       submatrix_(0, 0)->dot(x0, il::io, y0);
       submatrix_(0, 1)->dot(x1, il::io, y0);
       submatrix_(1, 0)->dot(x0, il::io, y1);

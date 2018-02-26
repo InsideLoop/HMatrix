@@ -11,7 +11,7 @@
 #include <il/StaticArray.h>
 #include <il/StaticArray2D.h>
 #include <il/Array2D.h>
-#include <il/linear_algebra.h>
+#include <il/linearAlgebra.h>
 
 #include <src/core/Utilities.h>
 

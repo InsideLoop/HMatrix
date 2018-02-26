@@ -7,7 +7,7 @@
 //
 
 // Inclusion from Inside Loop library
-#include <il/linear_algebra.h>
+#include <il/linearAlgebra.h>
 
 
 

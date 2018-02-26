@@ -3,10 +3,10 @@
 #include <il/Array.h>
 #include <il/Array2D.h>
 #include <il/algorithmArray.h>
-#include <il/linear_algebra/dense/blas/blas.h>
-#include <il/linear_algebra/dense/blas/dot.h>
-#include <il/linear_algebra/dense/factorization/LU.h>
-#include <il/linear_algebra/dense/factorization/Singular.h>
+#include <il/linearAlgebra/dense/blas/blas.h>
+#include <il/linearAlgebra/dense/blas/dot.h>
+#include <il/linearAlgebra/dense/factorization/LU.h>
+#include <il/linearAlgebra/dense/factorization/Singular.h>
 
 #include "Matrix.h"
 
@@ -36,7 +36,7 @@ il::StaticArray2D<double, p, p> residual(const hmat::Matrix<p> &M,
 
   il::StaticArray2D<double, p, p> matrix = M(i0, i1);
   if (r >= 1) {
-    il::Array2DEdit<double> reference_matrix = matrix.edit();
+    il::Array2DEdit<double> reference_matrix = matrix.Edit();
     il::blas(
         -1.0,
         A.view(
@@ -57,7 +57,7 @@ il::StaticArray2D<double, p, p> lowRankSubmatrix(const hmat::Matrix<p> &M,
                                                  il::int_t r) {
   il::StaticArray2D<double, p, p> matrix{0.0};
   if (r >= 1) {
-    il::Array2DEdit<double> reference_matrix = matrix.edit();
+    il::Array2DEdit<double> reference_matrix = matrix.Edit();
     il::blas(1.0, A.view(il::Range{i0 * p, (i0 + 1) * p}, il::Range{0, r * p}),
              B.view(il::Range{0, r * p}, il::Range{i1 * p, (i1 + 1) * p}), 0.0,
              il::io, reference_matrix);
@@ -92,7 +92,7 @@ il::int_t searchI1(const hmat::Matrix<p> &M, const il::Array2D<double> &A,
       il::Status status{};
       il::StaticArray<double, p> singular_values =
           il::singularValues(matrix, il::io, status);
-      status.abortOnError();
+      status.AbortOnError();
 
       il::sort(il::io, singular_values);
 
@@ -135,7 +135,7 @@ il::int_t searchI0(const hmat::Matrix<p> &M, const il::Array2D<double> &A,
       il::Status status{};
       il::StaticArray<double, p> singular_values =
           il::singularValues(matrix, il::io, status);
-      status.abortOnError();
+      status.AbortOnError();
 
       il::sort(il::io, singular_values);
 

@@ -11,7 +11,7 @@
 
 // Inclusion from Inside Loop library
 #include <il/Array2D.h>
-#include <il/linear_algebra.h>
+#include <il/linearAlgebra.h>
 #include <il/math.h>
 
 // Inclusion from the project

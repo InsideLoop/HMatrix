@@ -2,7 +2,7 @@
 #define HMAT_HMATRIX_H
 
 #include <il/Array2D.h>
-#include <il/linear_algebra/dense/blas/blas.h>
+#include <il/linearAlgebra/dense/blas/blas.h>
 
 namespace hmat {
 
