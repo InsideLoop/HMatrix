@@ -8,7 +8,7 @@
 #include <il/linearAlgebra/dense/factorization/LU.h>
 #include <il/linearAlgebra/dense/factorization/Singular.h>
 
-#include <matrixFunctor/MatrixFunctor.h>
+#include <arrayFunctor/MatrixGenerator.h>
 
 namespace il {
 
@@ -23,7 +23,7 @@ double frobeniusNorm(const il::Array2D<double> &A) {
 }
 
 template <il::int_t p>
-void residual_row(const il::MatrixFunctor<double> &M,
+void residual_row(const il::MatrixGenerator<double> &M,
                   const il::Array2D<double> &A, const il::Array2D<double> &B,
                   il::Range range0, il::Range range1, il::int_t i0, il::int_t r,
                   il::io_t, il::Array2DEdit<double> row) {
@@ -43,7 +43,7 @@ void residual_row(const il::MatrixFunctor<double> &M,
 };
 
 template <il::int_t p>
-void residual_column(const il::MatrixFunctor<double> &M,
+void residual_column(const il::MatrixGenerator<double> &M,
                      const il::Array2D<double> &A, const il::Array2D<double> &B,
                      il::Range range0, il::Range range1, il::int_t i1,
                      il::int_t r, il::io_t, il::Array2DEdit<double> column) {
@@ -108,7 +108,7 @@ il::int_t find_largest_singular_value(const il::Array2D<double> &row,
 }
 
 // template <il::int_t p>
-// il::StaticArray2D<double, p, p> residual(const il::matrixFunctor<double> &M,
+// il::StaticArray2D<double, p, p> residual(const il::arrayFunctor<double> &M,
 //                                         const il::Array2D<double> &A,
 //                                         const il::Array2D<double> &B,
 //                                         il::Range range0, il::Range range1,
@@ -136,7 +136,7 @@ il::int_t find_largest_singular_value(const il::Array2D<double> &row,
 
 template <il::int_t p>
 il::StaticArray2D<double, p, p> lowRankSubmatrix(
-    const il::MatrixFunctor<double> &M, const il::Array2D<double> &A,
+    const il::MatrixGenerator<double> &M, const il::Array2D<double> &A,
     const il::Array2D<double> &B, il::int_t i0, il::int_t i1, il::int_t r) {
   il::StaticArray2D<double, p, p> matrix{0.0};
   if (r >= 1) {
@@ -149,7 +149,7 @@ il::StaticArray2D<double, p, p> lowRankSubmatrix(
 };
 
 // template <il::int_t p>
-// il::int_t searchI1(const il::matrixFunctor<double> &M, const
+// il::int_t searchI1(const il::arrayFunctor<double> &M, const
 // il::Array2D<double> &A,
 //                   const il::Array2D<double> &B, il::Range range0,
 //                   il::Range range1, il::int_t i0_search,
@@ -240,7 +240,7 @@ il::int_t searchI0(const il::Array2D<double> &A, il::Range range0,
 }
 
 // template <il::int_t p>
-// il::Array2D<double> fullMatrix(const il::matrixFunctor<double> &M, il::Range
+// il::Array2D<double> fullMatrix(const il::arrayFunctor<double> &M, il::Range
 // range0,
 //                               il::Range range1) {
 //  const il::int_t n0 = range0.end - range0.begin;
@@ -261,7 +261,7 @@ il::int_t searchI0(const il::Array2D<double> &A, il::Range range0,
 //}
 
 // template <il::int_t p>
-// il::Array2D<double> lowRankApproximation(const il::matrixFunctor<double> &M,
+// il::Array2D<double> lowRankApproximation(const il::arrayFunctor<double> &M,
 //                                         il::Range range0, il::Range range1,
 //                                         const il::Array2D<double> &A,
 //                                         const il::Array2D<double> &B,
@@ -284,7 +284,7 @@ il::int_t searchI0(const il::Array2D<double> &A, il::Range range0,
 //}
 
 // template <il::int_t p>
-// il::Array2D<double> fullDifference(const il::matrixFunctor<double> &M,
+// il::Array2D<double> fullDifference(const il::arrayFunctor<double> &M,
 //                                   il::Range range0, il::Range range1,
 //                                   const il::Array2D<double> &A,
 //                                   const il::Array2D<double> &B, il::int_t r)

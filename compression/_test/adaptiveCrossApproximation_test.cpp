@@ -2,7 +2,7 @@
 
 #include <hmatrix/HMatrixUtils.h>
 #include <hmatrix/HMatrixType.h>
-#include <matrixFunctor/GaussianMatrix.h>
+#include <arrayFunctor/GaussianMatrix.h>
 #include <compression/toHMatrix.h>
 
 TEST(adaptiveCrossApproximation, test0) {

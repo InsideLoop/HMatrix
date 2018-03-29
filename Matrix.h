@@ -1,10 +1,10 @@
 #pragma once
 
-#include <matrixFunctor/MatrixFunctor.h>
+#include <arrayFunctor/MatrixGenerator.h>
 
 namespace il {
 
-class Matrix : public MatrixFunctor<double> {
+class Matrix : public MatrixGenerator<double> {
  private:
   il::Array2D<double> point_;
   double alpha_;

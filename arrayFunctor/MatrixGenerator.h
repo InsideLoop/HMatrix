@@ -6,7 +6,7 @@
 namespace il {
 
 template <typename T>
-class MatrixFunctor {
+class MatrixGenerator {
  public:
   virtual il::int_t size(il::int_t d) const = 0;
   virtual il::int_t blockSize() const = 0;
@@ -16,7 +16,7 @@ class MatrixFunctor {
 };
 
 template <typename T>
-il::Array2D<T> toArray2D(const il::MatrixFunctor<T>& M) {
+il::Array2D<T> toArray2D(const il::MatrixGenerator<T>& M) {
   il::Array2D<T> ans{M.size(0), M.size(1)};
   M.set(0, 0, il::io, ans.Edit());
   return ans;

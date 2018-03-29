@@ -36,7 +36,6 @@ elseif (IL_OPENBLAS)
 endif()
 
 add_executable(HMatrix
-        /home/fayard/Documents/Projects/InsideLoop/InsideLoop/il/linearAlgebra/matrixFree/solver/Gmres.cpp
         src/core/Utilities.cpp
         src/elasticity/Simplified3D.cpp
         cluster/cluster.h
@@ -54,10 +53,10 @@ add_executable(HMatrix
         linearAlgebra/factorization/old/LUHMatrix.h
         linearAlgebra/factorization/old/LUHMatrixNode.h
         linearAlgebra/factorization/old/lu.h
-        matrixFunctor/MatrixFunctor.h
+        arrayFunctor/MatrixGenerator.h
         main.cpp
         Matrix.h
-        )
+        arrayFunctor/ArrayFunctor.h)
 
 target_include_directories(HMatrix PRIVATE /home/fayard/Documents/Projects/InsideLoop/InsideLoop /home/fayard/Documents/Projects/EPFL/HMatrix)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})

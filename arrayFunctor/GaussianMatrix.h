@@ -2,12 +2,12 @@
 
 #include <il/math.h>
 
-#include <matrixFunctor/MatrixFunctor.h>
+#include <arrayFunctor/MatrixGenerator.h>
 
 namespace il {
 
 template <typename T>
-class GaussianMatrix : public MatrixFunctor<T> {
+class GaussianMatrix : public MatrixGenerator<T> {
  private:
   il::int_t n_;
   il::Range range0_;

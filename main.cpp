@@ -1,14 +1,16 @@
-#include <il/math.h>
+#include <il/MatrixFreeGmres.h>
 #include <il/Tree.h>
+#include <il/math.h>
 
+#include <arrayFunctor/ArrayFunctor.h>
 #include <cluster/cluster.h>
 #include <hmatrix/HMatrix.h>
 #include <hmatrix/HMatrixType.h>
 #include <hmatrix/HMatrixUtils.h>
 
+#include <Matrix.h>
 #include <compression/toHMatrix.h>
 #include <linearAlgebra/blas/dot.h>
-#include <Matrix.h>
 
 int main() {
   const il::int_t n = 8;
@@ -79,7 +81,23 @@ int main() {
   il::Array<double> yh = il::dot(h, x);
   il::Array<double> y1 = il::dot(h1, x);
 
-  std::cout << "Finished" << std::endl;
+  //////////////////////////////////////////////////////////////////////////////
+  // Use an iterative solver
+  //////////////////////////////////////////////////////////////////////////////
+  il::HMatrixGenerator<double> matrix_free_h{h};
+  const double relative_precision = 1.0e-3;
+  const il::int_t max_nb_iterations = 100;
+  const il::int_t restart_iteration = 20;
+  il::MatrixFreeGmres<il::HMatrixGenerator<double>> gmres{
+      relative_precision, max_nb_iterations, restart_iteration};
+
+  il::Array<double> y{n, 1.0};
+  il::Array<double> sol = gmres.Solve(matrix_free_h, y);
+  const il::int_t nb_iterations = gmres.nbIterations();
+
+  il::Array<double> check_sol = il::dot(h, sol);
+
+  std::cout << "Number of iterations: " << nb_iterations << std::endl;
 
   return 0;
 }

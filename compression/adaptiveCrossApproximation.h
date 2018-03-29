@@ -8,7 +8,7 @@
 namespace il {
 
 template <il::int_t p>
-LowRank<double> adaptiveCrossApproximation(const il::MatrixFunctor<double>& M,
+LowRank<double> adaptiveCrossApproximation(const il::MatrixGenerator<double>& M,
                                              il::Range range0, il::Range range1,
                                              double epsilon) {
   const il::int_t n0 = range0.end - range0.begin;

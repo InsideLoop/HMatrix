@@ -3,14 +3,14 @@
 #include <il/Tree.h>
 
 #include <hmatrix/HMatrix.h>
-#include <matrixFunctor/MatrixFunctor.h>
+#include <arrayFunctor/MatrixGenerator.h>
 #include <hmatrix/LowRank.h>
 #include <compression/adaptiveCrossApproximation.h>
 
 namespace il {
 
 template <il::int_t p>
-void hmatrix_rec(const il::MatrixFunctor<double>& matrix,
+void hmatrix_rec(const il::MatrixGenerator<double>& matrix,
                  const il::Tree<il::SubHMatrix, 4>& tree, il::spot_t st,
                  double epsilon, il::spot_t shm, il::io_t,
                  il::HMatrix<double>& hm) {
@@ -66,7 +66,7 @@ void hmatrix_rec(const il::MatrixFunctor<double>& matrix,
   }
 }
 
-il::HMatrix<double> toHMatrix(const il::MatrixFunctor<double>& matrix,
+il::HMatrix<double> toHMatrix(const il::MatrixGenerator<double>& matrix,
                               const il::Tree<il::SubHMatrix, 4>& tree,
                               double epsilon) {
   il::HMatrix<double> ans{};
