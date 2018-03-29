@@ -8,7 +8,7 @@
 #include <il/linearAlgebra/dense/factorization/LU.h>
 #include <il/linearAlgebra/dense/factorization/Singular.h>
 
-#include "Matrix.h"
+#include <matrixFunctor/MatrixFunctor.h>
 
 namespace il {
 
@@ -23,10 +23,10 @@ double frobeniusNorm(const il::Array2D<double> &A) {
 }
 
 template <il::int_t p>
-void residual_row(const il::Matrix<double> &M, const il::Array2D<double> &A,
-                  const il::Array2D<double> &B, il::Range range0,
-                  il::Range range1, il::int_t i0, il::int_t r, il::io_t,
-                  il::Array2DEdit<double> row) {
+void residual_row(const il::MatrixFunctor<double> &M,
+                  const il::Array2D<double> &A, const il::Array2D<double> &B,
+                  il::Range range0, il::Range range1, il::int_t i0, il::int_t r,
+                  il::io_t, il::Array2DEdit<double> row) {
   IL_EXPECT_FAST(row.size(0) == p);
   IL_EXPECT_FAST(row.size(1) == (range1.end - range1.begin) * p);
   IL_EXPECT_FAST(range0.begin <= i0 && i0 < range0.end);
@@ -43,7 +43,7 @@ void residual_row(const il::Matrix<double> &M, const il::Array2D<double> &A,
 };
 
 template <il::int_t p>
-void residual_column(const il::Matrix<double> &M,
+void residual_column(const il::MatrixFunctor<double> &M,
                      const il::Array2D<double> &A, const il::Array2D<double> &B,
                      il::Range range0, il::Range range1, il::int_t i1,
                      il::int_t r, il::io_t, il::Array2DEdit<double> column) {
@@ -107,8 +107,8 @@ il::int_t find_largest_singular_value(const il::Array2D<double> &row,
   return i1_search;
 }
 
-//template <il::int_t p>
-//il::StaticArray2D<double, p, p> residual(const il::Matrix<double> &M,
+// template <il::int_t p>
+// il::StaticArray2D<double, p, p> residual(const il::matrixFunctor<double> &M,
 //                                         const il::Array2D<double> &A,
 //                                         const il::Array2D<double> &B,
 //                                         il::Range range0, il::Range range1,
@@ -135,11 +135,9 @@ il::int_t find_largest_singular_value(const il::Array2D<double> &row,
 //};
 
 template <il::int_t p>
-il::StaticArray2D<double, p, p> lowRankSubmatrix(const il::Matrix<double> &M,
-                                                 const il::Array2D<double> &A,
-                                                 const il::Array2D<double> &B,
-                                                 il::int_t i0, il::int_t i1,
-                                                 il::int_t r) {
+il::StaticArray2D<double, p, p> lowRankSubmatrix(
+    const il::MatrixFunctor<double> &M, const il::Array2D<double> &A,
+    const il::Array2D<double> &B, il::int_t i0, il::int_t i1, il::int_t r) {
   il::StaticArray2D<double, p, p> matrix{0.0};
   if (r >= 1) {
     il::Array2DEdit<double> reference_matrix = matrix.Edit();
@@ -151,8 +149,8 @@ il::StaticArray2D<double, p, p> lowRankSubmatrix(const il::Matrix<double> &M,
 };
 
 // template <il::int_t p>
-// il::int_t searchI1(const il::Matrix<double> &M, const il::Array2D<double>
-// &A,
+// il::int_t searchI1(const il::matrixFunctor<double> &M, const
+// il::Array2D<double> &A,
 //                   const il::Array2D<double> &B, il::Range range0,
 //                   il::Range range1, il::int_t i0_search,
 //                   const il::Array<il::int_t> &i1_used) {
@@ -200,10 +198,9 @@ il::StaticArray2D<double, p, p> lowRankSubmatrix(const il::Matrix<double> &M,
 //}
 
 template <il::int_t p>
-il::int_t searchI0(const il::Array2D<double> &A,
-                   il::Range range0, il::Range range1,
-                   const il::Array<il::int_t> i0_used, il::int_t i1,
-                   il::int_t rank) {
+il::int_t searchI0(const il::Array2D<double> &A, il::Range range0,
+                   il::Range range1, const il::Array<il::int_t> i0_used,
+                   il::int_t i1, il::int_t rank) {
   const il::int_t n0 = range0.end - range0.begin;
   const il::int_t n1 = range1.end - range0.begin;
 
@@ -242,8 +239,9 @@ il::int_t searchI0(const il::Array2D<double> &A,
   return i0_search;
 }
 
-//template <il::int_t p>
-//il::Array2D<double> fullMatrix(const il::Matrix<double> &M, il::Range range0,
+// template <il::int_t p>
+// il::Array2D<double> fullMatrix(const il::matrixFunctor<double> &M, il::Range
+// range0,
 //                               il::Range range1) {
 //  const il::int_t n0 = range0.end - range0.begin;
 //  const il::int_t n1 = range1.end - range1.begin;
@@ -262,8 +260,8 @@ il::int_t searchI0(const il::Array2D<double> &A,
 //  return ans;
 //}
 
-//template <il::int_t p>
-//il::Array2D<double> lowRankApproximation(const il::Matrix<double> &M,
+// template <il::int_t p>
+// il::Array2D<double> lowRankApproximation(const il::matrixFunctor<double> &M,
 //                                         il::Range range0, il::Range range1,
 //                                         const il::Array2D<double> &A,
 //                                         const il::Array2D<double> &B,
@@ -285,11 +283,12 @@ il::int_t searchI0(const il::Array2D<double> &A,
 //  return ans;
 //}
 
-//template <il::int_t p>
-//il::Array2D<double> fullDifference(const il::Matrix<double> &M,
+// template <il::int_t p>
+// il::Array2D<double> fullDifference(const il::matrixFunctor<double> &M,
 //                                   il::Range range0, il::Range range1,
 //                                   const il::Array2D<double> &A,
-//                                   const il::Array2D<double> &B, il::int_t r) {
+//                                   const il::Array2D<double> &B, il::int_t r)
+//                                   {
 //  const il::int_t n0 = range0.end - range0.begin;
 //  const il::int_t n1 = range1.end - range1.begin;
 //  il::Array2D<double> ans{n0 * p, n1 * p};

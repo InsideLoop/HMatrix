@@ -2,7 +2,7 @@
 
 #include <il/Status.h>
 
-#include <HMatrix/HMatrix.h>
+#include <hmatrix/HMatrix.h>
 #include <linearAlgebra/factorization/old/LUHMatrix.h>
 
 #ifdef IL_MKL

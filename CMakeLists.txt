@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(HMatrix)
+project(hmatrix)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -39,26 +39,24 @@ add_executable(HMatrix
         /home/fayard/Documents/Projects/InsideLoop/InsideLoop/il/linearAlgebra/matrixFree/solver/Gmres.cpp
         src/core/Utilities.cpp
         src/elasticity/Simplified3D.cpp
-        compression/adaptiveCrossApproximation.h
         cluster/cluster.h
         cluster/cluster.cpp
-        Matrix.h
+        compression/adaptiveCrossApproximation.h
         compression/routines.h
-        main.cpp
+        hmatrix/HMatrix.h
+        hmatrix/HMatrixType.h
+        hmatrix/HMatrixNode.h
+        hmatrix/HMatrixUtils.h
+        hmatrix/LowRank.h
         linearAlgebra/blas/OldHMatrix.h
         linearAlgebra/factorization/LU.h
         linearAlgebra/factorization/LU.cpp
-        HMatrix/LowRank.h
-        HMatrix/HMatrix.h
-        HMatrix/HMatrixType.h
-        HMatrix/HMatrixNode.h
         linearAlgebra/factorization/old/LUHMatrix.h
         linearAlgebra/factorization/old/LUHMatrixNode.h
         linearAlgebra/factorization/old/lu.h
-        HMatrix/HMatrixUtils.h
-        HMatrix/SubMatrix.h
-        HMatrix/SmallRank.h
-        old_main.h
+        matrixFunctor/MatrixFunctor.h
+        main.cpp
+        Matrix.h
         )
 
 target_include_directories(HMatrix PRIVATE /home/fayard/Documents/Projects/InsideLoop/InsideLoop /home/fayard/Documents/Projects/EPFL/HMatrix)
@@ -71,8 +69,9 @@ target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
 
 set(UNIT_TEST_FILES
     gtest/src/gtest-all.cc
-    HMatrix/_test/HMatrixUtils_test.cpp
-        linearAlgebra/blas/dot.h)
+    hmatrix/_test/HMatrixUtils_test.cpp
+    compression/_test/adaptiveCrossApproximation_test.cpp
+    )
 
 add_executable(HMatrixUnitTest ${SOURCE_FILES} ${UNIT_TEST_FILES} test.cpp)
 target_include_directories(HMatrixUnitTest PUBLIC ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/gtest)

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <HMatrix/HMatrixUtils.h>
+#include <hmatrix/HMatrixUtils.h>
 
 TEST(toArray2D, test0) {
   const il::int_t n = 2;

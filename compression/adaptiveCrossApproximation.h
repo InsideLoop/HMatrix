@@ -2,13 +2,13 @@
 
 #include <il/Timer.h>
 
-#include <HMatrix/SmallRank.h>
+#include <hmatrix/LowRank.h>
 #include <compression/routines.h>
 
 namespace il {
 
 template <il::int_t p>
-SmallRank<double> adaptiveCrossApproximation(const il::Matrix<double>& M,
+LowRank<double> adaptiveCrossApproximation(const il::MatrixFunctor<double>& M,
                                              il::Range range0, il::Range range1,
                                              double epsilon) {
   const il::int_t n0 = range0.end - range0.begin;
@@ -178,7 +178,7 @@ SmallRank<double> adaptiveCrossApproximation(const il::Matrix<double>& M,
   //  std::cout << "Relative Error: " << frobenius_norm_difference /
   //  frobenius_norm_matrix << std::endl;
 
-  return il::SmallRank<double>{std::move(A), std::move(B)};
+  return il::LowRank<double>{std::move(A), std::move(B)};
 }
 
 }  // namespace il

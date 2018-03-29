@@ -6,10 +6,10 @@
 
 namespace il {
 
-il::Tree<il::SubMatrix, 4> hmatrixTree(const il::Array2D<double> &node,
+il::Tree<il::SubHMatrix, 4> hmatrixTree(const il::Array2D<double> &node,
                                        const il::Tree<il::Range, 2> &range_tree,
                                        double eta) {
-  il::Tree<il::SubMatrix, 4> hmatrix_tree{};
+  il::Tree<il::SubHMatrix, 4> hmatrix_tree{};
   hmatrixTree_rec(node, range_tree, eta, hmatrix_tree.root(), range_tree.root(),
                   range_tree.root(), il::io, hmatrix_tree);
   return hmatrix_tree;
@@ -18,18 +18,18 @@ il::Tree<il::SubMatrix, 4> hmatrixTree(const il::Array2D<double> &node,
 void hmatrixTree_rec(const il::Array2D<double> &node,
                      const il::Tree<il::Range, 2> &range_tree, double eta,
                      il::spot_t s, il::spot_t s0, il::spot_t s1, il::io_t,
-                     il::Tree<il::SubMatrix, 4> &hmatrix_tree) {
+                     il::Tree<il::SubHMatrix, 4> &hmatrix_tree) {
   const bool is_admissible =
       isAdmissible(node, eta, range_tree.value(s0), range_tree.value(s1));
   if (is_admissible) {
     hmatrix_tree.Set(s,
-                     il::SubMatrix{range_tree.value(s0), range_tree.value(s1),
+                     il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
                                    il::HMatrixType::LowRank});
   } else {
     if (range_tree.hasChild(s0, 0) && range_tree.hasChild(s0, 1) &&
         range_tree.hasChild(s1, 0) && range_tree.hasChild(s1, 1)) {
       hmatrix_tree.Set(s,
-                       il::SubMatrix{range_tree.value(s0), range_tree.value(s1),
+                       il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
                                      il::HMatrixType::Hierarchical});
       hmatrix_tree.AddChild(s, 0);
       hmatrixTree_rec(node, range_tree, eta, hmatrix_tree.child(s, 0),
@@ -50,12 +50,12 @@ void hmatrixTree_rec(const il::Array2D<double> &node,
     } else if ((range_tree.hasChild(s0, 0) && range_tree.hasChild(s0, 1)) ||
                (range_tree.hasChild(s1, 0) && range_tree.hasChild(s1, 1))) {
       hmatrix_tree.Set(s,
-                       il::SubMatrix{range_tree.value(s0), range_tree.value(s1),
+                       il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
                                      il::HMatrixType::FullRank});
     } else {
       // FIXME
       hmatrix_tree.Set(s,
-                       il::SubMatrix{range_tree.value(s0), range_tree.value(s1),
+                       il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
                                      il::HMatrixType::FullRank});
     }
   }

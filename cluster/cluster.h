@@ -10,8 +10,7 @@
 #include <il/Tree.h>
 #include <il/algorithmArray2D.h>
 
-#include <HMatrix/SubMatrix.h>
-#include <HMatrix/HMatrixType.h>
+#include <hmatrix/HMatrixType.h>
 
 namespace il {
 
@@ -26,14 +25,14 @@ void cluster_rec(il::spot_t s, il::int_t leaf_size, il::io_t,
                  il::Tree<il::Range, 2>& tree, il::Array2D<double>& node,
                  il::Array<il::int_t>& permutation);
 
-il::Tree<il::SubMatrix, 4> hmatrixTree(const il::Array2D<double>& node,
+il::Tree<il::SubHMatrix, 4> hmatrixTree(const il::Array2D<double>& node,
                                        const il::Tree<il::Range, 2>& tree,
                                        double eta);
 
 void hmatrixTree_rec(const il::Array2D<double>& node,
                      const il::Tree<il::Range, 2>& range_tree, double eta,
                      il::spot_t s, il::spot_t s0, il::spot_t s1, il::io_t,
-                     il::Tree<il::SubMatrix, 4>& hmatrix_tree);
+                     il::Tree<il::SubHMatrix, 4>& hmatrix_tree);
 
 inline double distance(const il::Array2D<double>& node, il::Range range_0,
                        il::Range range_1) {

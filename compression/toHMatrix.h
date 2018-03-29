@@ -2,19 +2,19 @@
 
 #include <il/Tree.h>
 
-#include <HMatrix/HMatrix.h>
-#include <HMatrix/SmallRank.h>
-#include <Matrix.h>
+#include <hmatrix/HMatrix.h>
+#include <matrixFunctor/MatrixFunctor.h>
+#include <hmatrix/LowRank.h>
 #include <compression/adaptiveCrossApproximation.h>
 
 namespace il {
 
 template <il::int_t p>
-void hmatrix_rec(const il::Matrix<double>& matrix,
-                 const il::Tree<il::SubMatrix, 4>& tree, il::spot_t st,
+void hmatrix_rec(const il::MatrixFunctor<double>& matrix,
+                 const il::Tree<il::SubHMatrix, 4>& tree, il::spot_t st,
                  double epsilon, il::spot_t shm, il::io_t,
                  il::HMatrix<double>& hm) {
-  const il::SubMatrix info = tree.value(st);
+  const il::SubHMatrix info = tree.value(st);
   switch (info.type) {
     case il::HMatrixType::FullRank: {
       const il::int_t n0 = info.range0.end - info.range0.begin;
@@ -27,7 +27,7 @@ void hmatrix_rec(const il::Matrix<double>& matrix,
     case il::HMatrixType::LowRank: {
       const il::int_t n0 = info.range0.end - info.range0.begin;
       const il::int_t n1 = info.range1.end - info.range1.begin;
-      il::SmallRank<double> sr = il::adaptiveCrossApproximation<p>(
+      il::LowRank<double> sr = il::adaptiveCrossApproximation<p>(
           matrix, info.range0, info.range1, epsilon);
       const il::int_t r = sr.A.size(1);
       hm.SetLowRank(shm, n0, n1, r);
@@ -66,9 +66,9 @@ void hmatrix_rec(const il::Matrix<double>& matrix,
   }
 }
 
-il::HMatrix<double> compress(const il::Matrix<double>& matrix,
-                             const il::Tree<il::SubMatrix, 4>& tree,
-                             double epsilon) {
+il::HMatrix<double> toHMatrix(const il::MatrixFunctor<double>& matrix,
+                              const il::Tree<il::SubHMatrix, 4>& tree,
+                              double epsilon) {
   il::HMatrix<double> ans{};
   if (matrix.blockSize() == 1) {
     hmatrix_rec<1>(matrix, tree, tree.root(), epsilon, ans.root(), il::io, ans);

@@ -3,7 +3,7 @@
 #include <il/Array.h>
 #include <il/linearAlgebra.h>
 
-#include <HMatrix/HMatrix.h>
+#include <hmatrix/HMatrix.h>
 
 namespace il {
 

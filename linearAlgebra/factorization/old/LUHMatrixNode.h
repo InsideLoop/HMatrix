@@ -1,6 +1,6 @@
 #pragma once
 
-#include <HMatrix/LowRank.h>
+#include <hmatrix/LowRank.h>
 #include <il/Array.h>
 #include <il/Array2D.h>
 

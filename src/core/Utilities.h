@@ -14,10 +14,10 @@
 
 namespace hfp2d {
 
-void takeSubMatrix(il::Array2D<double> &sub, int i0, int i1, int j0, int j1,
+void takeSubHMatrix(il::Array2D<double> &sub, int i0, int i1, int j0, int j1,
                    const il::Array2D<double> &A);
 
-void setSubMatrix(il::Array2D<double> &A, int i0, int i1,
+void setSubHMatrix(il::Array2D<double> &A, int i0, int i1,
                   const il::StaticArray2D<double, 2, 4> &B);
 
 

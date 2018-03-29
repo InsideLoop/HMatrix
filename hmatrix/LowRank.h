@@ -5,7 +5,7 @@
 namespace il {
 
 template <typename T>
-struct SmallRank {
+struct LowRank {
   il::Array2D<T> A;
   il::Array2D<T> B;
 };

@@ -16,7 +16,7 @@
 namespace hfp2d{
 
 // Some utilities //
-void takeSubMatrix(il::Array2D<double> &sub, int i0, int i1, int j0, int j1,
+void takeSubHMatrix(il::Array2D<double> &sub, int i0, int i1, int j0, int j1,
                    const il::Array2D<double> &A) {
   IL_EXPECT_FAST((i1 - i0 + 1) == sub.size(0));
   IL_EXPECT_FAST((j1 - j0 + 1) == sub.size(1));
@@ -29,7 +29,7 @@ void takeSubMatrix(il::Array2D<double> &sub, int i0, int i1, int j0, int j1,
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-void setSubMatrix(il::Array2D<double> &A, int i0, int i1,
+void setSubHMatrix(il::Array2D<double> &A, int i0, int i1,
                   const il::StaticArray2D<double, 2, 4> &B) {
   IL_EXPECT_FAST(i0 + B.size(0) <= A.size(0));
   IL_EXPECT_FAST(i1 + B.size(1) <= A.size(1));

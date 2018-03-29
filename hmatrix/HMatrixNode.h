@@ -1,7 +1,6 @@
 #pragma once
 
-#include <HMatrix/LowRank.h>
-#include <HMatrix/HMatrixType.h>
+#include <hmatrix/HMatrixType.h>
 #include <il/Array2D.h>
 #include <il/linearAlgebra/Matrix.h>
 

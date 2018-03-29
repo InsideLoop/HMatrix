@@ -4,9 +4,8 @@
 #include <il/Array2D.h>
 #include <il/Map.h>
 
-#include <HMatrix/HMatrixNode.h>
-#include <HMatrix/LowRank.h>
-#include <HMatrix/HMatrixType.h>
+#include <hmatrix/HMatrixNode.h>
+#include <hmatrix/HMatrixType.h>
 
 namespace il {
 

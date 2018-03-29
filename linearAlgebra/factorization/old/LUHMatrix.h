@@ -4,8 +4,8 @@
 #include <il/Array2D.h>
 
 #include <linearAlgebra/factorization/old/LUHMatrixNode.h>
-#include <HMatrix/LowRank.h>
-#include <HMatrix/HMatrixType.h>
+#include <hmatrix/LowRank.h>
+#include <hmatrix/HMatrixType.h>
 
 namespace il {
 

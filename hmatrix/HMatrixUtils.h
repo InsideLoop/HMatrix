@@ -1,6 +1,6 @@
 #pragma once
 
-#include <HMatrix/HMatrix.h>
+#include <hmatrix/HMatrix.h>
 #include <il/linearAlgebra.h>
 
 namespace il {
