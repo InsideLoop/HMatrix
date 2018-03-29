@@ -5,7 +5,7 @@
 #include <HMatrix/HMatrix.h>
 #include <HMatrix/HMatrixUtils.h>
 #include <HMatrix/SubMatrix.h>
-#include <HMatrix/toHMatrix.h>
+#include <compression/toHMatrix.h>
 #include <Matrix.h>
 #include <linearAlgebra/blas/dot.h>
 
@@ -53,16 +53,16 @@ void clustering() {
 
   //  We build the H-Matrix
   const double alpha = 1.0;
-  const il::Matrix<double, 1> M{collocation, alpha};
+  const il::Matrix<double> M{collocation, alpha};
   const double epsilon = 0.0;
-  const il::HMatrix<double> h = il::toHMatrix(M, hmatrix_tree, epsilon);
+  const il::HMatrix<double> h = il::compress(M, hmatrix_tree, epsilon);
   const double cr = il::compressionRatio(h);
 
   std::cout << "Compression ratio: " << cr << std::endl;
 
   const il::Array2D<double> h0 = il::toArray2D(h);
   il::Array2D<double> h1{n, n};
-  M.Set(0, 0, il::io, h1.Edit());
+  M.set(0, 0, il::io, h1.Edit());
 
   il::Array2D<double> diff{n, n};
   for (il::int_t i1 = 0; i1 < n; ++i1) {

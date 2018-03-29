@@ -3,7 +3,7 @@
 #include <il/Array.h>
 #include <il/Array2D.h>
 
-#include <HMatrix/LUHMatrixNode.h>
+#include <linearAlgebra/factorization/old/LUHMatrixNode.h>
 #include <HMatrix/LowRank.h>
 #include <HMatrix/HMatrixType.h>
 

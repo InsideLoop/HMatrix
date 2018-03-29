@@ -2,16 +2,15 @@
 
 #include <il/Timer.h>
 
-#include <HMatrix/routines.h>
 #include <HMatrix/SmallRank.h>
+#include <compression/routines.h>
 
 namespace il {
 
-
 template <il::int_t p>
-SmallRank<double> adaptiveCrossApproximation(
-    const il::Matrix<double, p>& M, il::Range range0, il::Range range1,
-    double epsilon) {
+SmallRank<double> adaptiveCrossApproximation(const il::Matrix<double>& M,
+                                             il::Range range0, il::Range range1,
+                                             double epsilon) {
   const il::int_t n0 = range0.end - range0.begin;
   const il::int_t n1 = range1.end - range1.begin;
 
@@ -26,14 +25,14 @@ SmallRank<double> adaptiveCrossApproximation(
   double frobenius_low_rank = 0.0;
   double frobenius_norm_difference = -1.0;
 
+  il::Array2D<double> row{p, n1 * p};
+  il::Array2D<double> column{n0 * p, p};
   while (true) {
-    // In the Row i0_search of the matrix M - Sum_{k = 0}^rank Ak cross Bk
-    // we search for the p x p matrix whose lowest singular value is the highest
-    //
+    il::residual_row<p>(M, A, B, range0, range1, i0_search, rank, il::io,
+                        row.Edit());
     const il::int_t i1_search =
-        il::searchI1(M, A, B, range0, range1, i0_search, i1_used);
+        il::find_largest_singular_value<p>(row, range1, i1_used);
     if (i1_search == -1) {
-      // We don't have any pivot
       break;
     }
     i0_used.Append(i0_search);
@@ -42,9 +41,12 @@ SmallRank<double> adaptiveCrossApproximation(
     // Now, we compute the inverse for the pxp-matrix which has the largest
     // smallest singular value. The matrix we have has to be nonsingular.
     // Otherwise, we would have gotten i1_search == -1
-    //
-    il::StaticArray2D<double, p, p> pivot_matrix =
-        il::residual(M, A, B, range0, range1, i0_search, i1_search, rank);
+    il::StaticArray2D<double, p, p> pivot_matrix{};
+    for (il::int_t j1 = 0; j1 < p; ++j1) {
+      for (il::int_t j0 = 0; j0 < p; ++j0) {
+        pivot_matrix(j0, j1) = row(j0, (i1_search - range1.begin) * p + j1);
+      }
+    }
     il::Status status{};
     il::LU<il::StaticArray2D<double, p, p>> lu{pivot_matrix, il::io, status};
     status.AbortOnError();
@@ -64,27 +66,32 @@ SmallRank<double> adaptiveCrossApproximation(
     if (!is_finite) {
       break;
     }
-
     // Just to check
     il::StaticArray2D<double, p, p> check_identity =
         il::dot(gamma, pivot_matrix);
 
     // Update the Matrices A and B to take into account the new ranks
     A.Resize(n0 * p, (rank + 1) * p);
+    il::residual_column<p>(M, A, B, range0, range1, i1_search, rank, il::io,
+                           column.Edit());
     for (il::int_t i0 = range0.begin; i0 < range0.end; ++i0) {
-      il::StaticArray2D<double, p, p> matrix =
-          il::residual(M, A, B, range0, range1, i0, i1_search, rank);
-      for (il::int_t b1 = 0; b1 < p; ++b1) {
-        for (il::int_t b0 = 0; b0 < p; ++b0) {
-          IL_EXPECT_MEDIUM(std::isfinite(matrix(b0, b1)));
-          A((i0 - range0.begin) * p + b0, rank * p + b1) = matrix(b0, b1);
+      for (il::int_t j1 = 0; j1 < p; ++j1) {
+        for (il::int_t j0 = 0; j0 < p; ++j0) {
+          A((i0 - range0.begin) * p + j0, rank * p + j1) =
+              column((i0 - range0.begin) * p + j0, j1);
         }
       }
     }
     B.Resize((rank + 1) * p, n1 * p);
+    il::residual_row<p>(M, A, B, range0, range1, i0_search, rank, il::io,
+                        row.Edit());
     for (il::int_t i1 = range1.begin; i1 < range1.end; ++i1) {
-      il::StaticArray2D<double, p, p> matrix =
-          il::residual(M, A, B, range0, range1, i0_search, i1, rank);
+      il::StaticArray2D<double, p, p> matrix{};
+      for (il::int_t j1 = 0; j1 < p; ++j1) {
+        for (il::int_t j0 = 0; j0 < p; ++j0) {
+          matrix(j0, j1) = row(j0, (i1 - range1.begin) * p + j1);
+        }
+      }
       matrix = il::dot(gamma, matrix);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
@@ -141,7 +148,7 @@ SmallRank<double> adaptiveCrossApproximation(
     }
     frobenius_low_rank += 2 * scalar_product + frobenius_norm_ab;
 
-    i0_search = il::searchI0(M, A, range0, range1, i0_used, i1_search, rank);
+    i0_search = il::searchI0<p>(A, range0, range1, i0_used, i1_search, rank);
     ++rank;
 
     //    il::Array2D<double> low_rank =

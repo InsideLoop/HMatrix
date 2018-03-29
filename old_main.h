@@ -7,10 +7,10 @@
 #include <il/linearAlgebra/matrixFree/solver/Gmres.h>
 #include <il/linearAlgebra/matrixFree/solver/MatrixFreeGmres.h>
 
-#include "HMatrix/adaptiveCrossApproximation.h"
-#include "HMatrix/toHMatrix.h"
+#include "compression/adaptiveCrossApproximation.h"
+#include "compression/toHMatrix.h"
 #include "cluster/cluster.h"
-#include "HMatrix/routines.h"
+#include "compression/routines.h"
 
 double relativeError(const il::Array<double> &a, const il::Array<double> &b) {
   IL_EXPECT_FAST(a.size() == b.size());
