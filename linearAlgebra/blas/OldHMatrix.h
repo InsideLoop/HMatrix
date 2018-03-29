@@ -4,7 +4,7 @@
 #include <il/Array2D.h>
 #include <il/linearAlgebra/dense/blas/blas.h>
 
-namespace hmat {
+namespace il {
 
 template <typename T>
 struct LowRank {
@@ -22,7 +22,7 @@ il::int_t LowRank<T>::size(il::int_t d) const {
 }
 
 template <typename T>
-class HMatrix {
+class OldHMatrix {
  private:
   il::int_t n0_;
   il::int_t n1_;
@@ -32,15 +32,15 @@ class HMatrix {
 };
 
 template <typename T>
-il::int_t HMatrix<T>::size(il::int_t d) const {
+il::int_t OldHMatrix<T>::size(il::int_t d) const {
   IL_EXPECT_MEDIUM(d >= 0 && d < 2);
 
   return d == 0 ? n0_ : n1_;
 }
 
-void blas(const il::Array<double> &x, const HMatrix<double> &H, il::io_t,
+void blas(const il::Array<double> &x, const OldHMatrix<double> &H, il::io_t,
           il::Array<double> &y);
-void blas(const HMatrix<double> &H, const il::Array<double> &x, il::io_t,
+void blas(const OldHMatrix<double> &H, const il::Array<double> &x, il::io_t,
           il::Array<double> &y);
 
 // We want to define the following operation: H0 = H0 + H1 x H2
@@ -55,7 +55,7 @@ void blas(const il::Array2D<double> &H1, const il::Array2D<double> &H2,
   il::blas(1.0, H1, H2, 1.0, il::io, H0);
 }
 
-void blas(const il::Array2D<double> &H1, const hmat::LowRank<double> &H2,
+void blas(const il::Array2D<double> &H1, const il::LowRank<double> &H2,
           il::io_t, il::Array2D<double> &H0) {
   IL_EXPECT_FAST(H0.size(0) == H1.size(0));
   IL_EXPECT_FAST(H1.size(1) == H2.size(0));
@@ -66,7 +66,7 @@ void blas(const il::Array2D<double> &H1, const hmat::LowRank<double> &H2,
   il::blas(1.0, H1, tmp, 1.0, il::io, H0);
 }
 
-void blas(const hmat::LowRank<double> &H1, const il::Array2D<double> &H2,
+void blas(const il::LowRank<double> &H1, const il::Array2D<double> &H2,
           il::io_t, il::Array2D<double> &H0) {
   IL_EXPECT_FAST(H0.size(0) == H1.size(0));
   IL_EXPECT_FAST(H1.size(1) == H2.size(0));
@@ -77,7 +77,7 @@ void blas(const hmat::LowRank<double> &H1, const il::Array2D<double> &H2,
   il::blas(1.0, tmp, H2, 1.0, il::io, H0);
 }
 
-void blas(const hmat::LowRank<double> &H1, const hmat::LowRank<double> &H2,
+void blas(const il::LowRank<double> &H1, const il::LowRank<double> &H2,
           il::io_t, il::Array2D<double> &H0) {
   IL_EXPECT_FAST(H0.size(0) == H1.size(0));
   IL_EXPECT_FAST(H1.size(1) == H2.size(0));
@@ -90,7 +90,7 @@ void blas(const hmat::LowRank<double> &H1, const hmat::LowRank<double> &H2,
   il::blas(1.0, tmp1, H2.B, 0.0, il::io, H0);
 }
 
-void blas(const il::Array2D<double> &H1, const hmat::HMatrix<double> &H2,
+void blas(const il::Array2D<double> &H1, const il::OldHMatrix<double> &H2,
           il::io_t, il::Array2D<double> &H0) {
   IL_EXPECT_FAST(H0.size(0) == H1.size(0));
   IL_EXPECT_FAST(H1.size(1) == H2.size(0));
@@ -103,7 +103,7 @@ void blas(const il::Array2D<double> &H1, const hmat::HMatrix<double> &H2,
       row[i1] = H1(i0, i1);
     }
     il::Array<double> hrow{H2.size(1), 0.0};
-    hmat::blas(row, H2, il::io, hrow);
+    il::blas(row, H2, il::io, hrow);
     for (il::int_t i1 = 0; i1 < tmp.size(1); ++i1) {
       tmp(i0, i1) = hrow[i1];
     }
@@ -112,7 +112,7 @@ void blas(const il::Array2D<double> &H1, const hmat::HMatrix<double> &H2,
   il::blas(1.0, tmp, 1.0, il::io, H0);
 }
 
-void blas(const hmat::HMatrix<double> &H1, const il::Array2D<double> &H2,
+void blas(const il::OldHMatrix<double> &H1, const il::Array2D<double> &H2,
           il::io_t, il::Array2D<double> &H0) {
   IL_EXPECT_FAST(H0.size(0) == H1.size(0));
   IL_EXPECT_FAST(H1.size(1) == H2.size(0));
@@ -125,7 +125,7 @@ void blas(const hmat::HMatrix<double> &H1, const il::Array2D<double> &H2,
       column[i0] = H2(i0, i1);
     }
     il::Array<double> hcolumn{H1.size(0), 0.0};
-    hmat::blas(H1, column, il::io, hcolumn);
+    il::blas(H1, column, il::io, hcolumn);
     for (il::int_t i0 = 0; i0 < tmp.size(0); ++i0) {
       tmp(i0, i1) = hcolumn[i1];
     }
@@ -134,7 +134,7 @@ void blas(const hmat::HMatrix<double> &H1, const il::Array2D<double> &H2,
   il::blas(1.0, tmp, 1.0, il::io, H0);
 }
 
-void blas(const hmat::LowRank<double> &H1, const hmat::HMatrix<double> &H2,
+void blas(const il::LowRank<double> &H1, const il::OldHMatrix<double> &H2,
           il::io_t, il::Array2D<double> &H0) {
   IL_EXPECT_FAST(H0.size(0) == H1.size(0));
   IL_EXPECT_FAST(H1.size(1) == H2.size(0));
@@ -145,6 +145,6 @@ void blas(const hmat::LowRank<double> &H1, const hmat::HMatrix<double> &H2,
 
 
 
-}  // namespace hmat
+}  // namespace il
 
 #endif  // HMAT_HMATRIX_H

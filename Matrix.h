@@ -2,57 +2,98 @@
 
 #include <cmath>
 
+#include <il/Array2D.h>
 #include <il/StaticArray2D.h>
 #include <il/math.h>
 
 #include <src/core/SegmentData.h>
 #include <src/elasticity/Simplified3D.h>
 
-namespace hmat {
+namespace il {
 
-template <il::int_t p>
+template <typename T, il::int_t p>
 class Matrix {
  private:
-  il::int_t nb_elements_;
-  il::Array2D<double> collocation_;
-  hfp2d::ElasticProperties elastic_properties_;
+  il::Array2D<double> point_;
+  double alpha_;
 
  public:
-  Matrix(const il::Array2D<double>& collocation,
-         const hfp2d::ElasticProperties& elastic_properties) {
-    IL_EXPECT_FAST(collocation.size(1) == 2);
-
-    nb_elements_ = collocation.size(0);
-    collocation_ = collocation;
-    elastic_properties_ = elastic_properties;
+  Matrix(const il::Array2D<double>& point, double alpha)
+      : point_{point}, alpha_{alpha} {
+    IL_EXPECT_FAST(point_.size(1) == 2);
   };
-  il::int_t size(il::int_t k) const { return nb_elements_; }
-  hfp2d::SegmentData segmentData(il::int_t i) const {
-    il::StaticArray2D<double, 2, 2> Xs{};
-    const double t = (il::pi / nb_elements_) / 2;
-    const double cost = std::cos(t);
-    const double sint = std::sin(t);
+  il::int_t size(il::int_t d) const { return point_.size(0); };
+  il::StaticArray2D<T, p, p> operator()(il::int_t i0, il::int_t i1) const {
+    IL_EXPECT_MEDIUM(i0 < point_.size(0));
+    IL_EXPECT_MEDIUM(i1 < point_.size(0));
 
-    Xs(0, 0) = collocation_(i, 0) * cost + collocation_(i, 1) * sint;
-    Xs(0, 1) = - collocation_(i, 0) * sint + collocation_(i, 1) * cost;
-    Xs(1, 0) = collocation_(i, 0) * cost - collocation_(i, 1) * sint;
-    Xs(1, 1) = collocation_(i, 0) * sint + collocation_(i, 1) * cost;
-
-    const il::int_t interpolation_order = 0;
-    return hfp2d::SegmentData(Xs, interpolation_order);
+    il::StaticArray2D<double, 1, 1> ans{};
+    const double dx = point_(i0, 0) - point_(i1, 0);
+    const double dy = point_(i0, 1) - point_(i1, 1);
+    ans(0, 0) = std::exp(-alpha_ * (dx * dx + dy * dy));
+    return ans;
   };
-  il::StaticArray2D<double, 2, 2> operator()(il::int_t i0, il::int_t i1) const {
-    IL_EXPECT_FAST(static_cast<std::size_t>(i0) <
-                   static_cast<std::size_t>(nb_elements_));
-    IL_EXPECT_FAST(static_cast<std::size_t>(i1) <
-                   static_cast<std::size_t>(nb_elements_));
+  void Set(il::int_t i0, il::int_t i1, il::io_t,
+           il::Array2DEdit<double> M) const {
+    IL_EXPECT_MEDIUM(i0 + M.size(0) <= point_.size(0));
+    IL_EXPECT_MEDIUM(i1 + M.size(1) <= point_.size(0));
 
-    const double ker_options = 1.0;
-    return hfp2d::normal_shear_stress_kernel_s3d_dp0_dd_nodal(
-        segmentData(i1), segmentData(i0), 0, 0, elastic_properties_,
-        ker_options);
+    for (il::int_t j1 = 0; j1 < M.size(1); ++j1) {
+      for (il::int_t j0 = 0; j0 < M.size(0); ++j0) {
+        il::int_t k0 = i0 + j0;
+        il::int_t k1 = i1 + j1;
+        const double dx = point_(k0, 0) - point_(k1, 0);
+        const double dy = point_(k0, 1) - point_(k1, 1);
+        M(j0, j1) = std::exp(-alpha_ * (dx * dx + dy * dy));
+      }
+    }
   }
 };
+
+// template <il::int_t p>
+// class Matrix {
+// private:
+//  il::int_t nb_elements_;
+//  il::Array2D<double> collocation_;
+//  hfp2d::ElasticProperties elastic_properties_;
+//
+// public:
+//  Matrix(const il::Array2D<double>& collocation,
+//         const hfp2d::ElasticProperties& elastic_properties) {
+//    IL_EXPECT_FAST(collocation.size(1) == 2);
+//
+//    nb_elements_ = collocation.size(0);
+//    collocation_ = collocation;
+//    elastic_properties_ = elastic_properties;
+//  };
+//  il::int_t size(il::int_t k) const { return nb_elements_; }
+//  hfp2d::SegmentData segmentData(il::int_t i) const {
+//    il::StaticArray2D<double, 2, 2> Xs{};
+//    const double t = (il::pi / nb_elements_) / 2;
+//    const double cost = std::cos(t);
+//    const double sint = std::sin(t);
+//
+//    Xs(0, 0) = collocation_(i, 0) * cost + collocation_(i, 1) * sint;
+//    Xs(0, 1) = - collocation_(i, 0) * sint + collocation_(i, 1) * cost;
+//    Xs(1, 0) = collocation_(i, 0) * cost - collocation_(i, 1) * sint;
+//    Xs(1, 1) = collocation_(i, 0) * sint + collocation_(i, 1) * cost;
+//
+//    const il::int_t interpolation_order = 0;
+//    return hfp2d::SegmentData(Xs, interpolation_order);
+//  };
+//  il::StaticArray2D<double, 2, 2> operator()(il::int_t i0, il::int_t i1) const
+//  {
+//    IL_EXPECT_FAST(static_cast<std::size_t>(i0) <
+//                   static_cast<std::size_t>(nb_elements_));
+//    IL_EXPECT_FAST(static_cast<std::size_t>(i1) <
+//                   static_cast<std::size_t>(nb_elements_));
+//
+//    const double ker_options = 1.0;
+//    return hfp2d::normal_shear_stress_kernel_s3d_dp0_dd_nodal(
+//        segmentData(i1), segmentData(i0), 0, 0, elastic_properties_,
+//        ker_options);
+//  }
+//};
 
 // template <il::int_t p>
 // class Matrix {
@@ -115,4 +156,4 @@ class Matrix {
 //  }
 //};
 
-}  // namespace hmat
+}  // namespace il

@@ -1,40 +1,17 @@
 #pragma once
 
-// int main() {
-//  const il::int_t p = 2;
-//  const il::int_t n0 = 10;
-//  const il::int_t n1 = 10;
-//  const double x0 = 0.0;
-//  const double x1 = 5.0;
-//
-//  hmat::Matrix<p> M{n0, n1, x0, x1};
-//  il::Array2D<double> A{n0 * p, 0};
-//  il::Array2D<double> B{0, n1 * p};
-//
-//  il::Array<il::int_t> i0_used{};
-//  il::Array<il::int_t> i1_used{};
-//
-//  il::int_t rank = 0;
-//  il::int_t i0_search = 0;
-//  double frobenius_low_rank = 0.0;
-//  const double epsilon = 0.01;
-//}
 #include <il/Timer.h>
 
-#include "routines.h"
+#include <HMatrix/routines.h>
+#include <HMatrix/SmallRank.h>
 
-namespace hmat {
+namespace il {
 
-template <typename T>
-struct SmallRank {
-  il::Array2D<T> A;
-  il::Array2D<T> B;
-};
 
 template <il::int_t p>
-SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
-                                             il::Range range0, il::Range range1,
-                                             double epsilon) {
+SmallRank<double> adaptiveCrossApproximation(
+    const il::Matrix<double, p>& M, il::Range range0, il::Range range1,
+    double epsilon) {
   const il::int_t n0 = range0.end - range0.begin;
   const il::int_t n1 = range1.end - range1.begin;
 
@@ -54,7 +31,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     // we search for the p x p matrix whose lowest singular value is the highest
     //
     const il::int_t i1_search =
-        hmat::searchI1(M, A, B, range0, range1, i0_search, i1_used);
+        il::searchI1(M, A, B, range0, range1, i0_search, i1_used);
     if (i1_search == -1) {
       // We don't have any pivot
       break;
@@ -67,7 +44,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     // Otherwise, we would have gotten i1_search == -1
     //
     il::StaticArray2D<double, p, p> pivot_matrix =
-        hmat::residual(M, A, B, range0, range1, i0_search, i1_search, rank);
+        il::residual(M, A, B, range0, range1, i0_search, i1_search, rank);
     il::Status status{};
     il::LU<il::StaticArray2D<double, p, p>> lu{pivot_matrix, il::io, status};
     status.AbortOnError();
@@ -96,7 +73,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     A.Resize(n0 * p, (rank + 1) * p);
     for (il::int_t i0 = range0.begin; i0 < range0.end; ++i0) {
       il::StaticArray2D<double, p, p> matrix =
-          hmat::residual(M, A, B, range0, range1, i0, i1_search, rank);
+          il::residual(M, A, B, range0, range1, i0, i1_search, rank);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
           IL_EXPECT_MEDIUM(std::isfinite(matrix(b0, b1)));
@@ -107,7 +84,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     B.Resize((rank + 1) * p, n1 * p);
     for (il::int_t i1 = range1.begin; i1 < range1.end; ++i1) {
       il::StaticArray2D<double, p, p> matrix =
-          hmat::residual(M, A, B, range0, range1, i0_search, i1, rank);
+          il::residual(M, A, B, range0, range1, i0_search, i1, rank);
       matrix = il::dot(gamma, matrix);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
@@ -121,7 +98,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     il::StaticArray2D<double, p, p> frobenius_A{0.0};
     il::blas(1.0,
              A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
-             il::MatrixOperator::Tranpose,
+             il::MatrixOperator::Transpose,
              A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
              0.0, il::io, frobenius_A.Edit());
     // New value for the norm of B
@@ -129,7 +106,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     il::blas(1.0,
              B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
              B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
-             il::MatrixOperator::Tranpose, 0.0, il::io, frobenius_B.Edit());
+             il::MatrixOperator::Transpose, 0.0, il::io, frobenius_B.Edit());
     // compute ||A_k B_k||^2
     double frobenius_norm_ab = 0.0;
     for (il::int_t b1 = 0; b1 < p; ++b1) {
@@ -145,7 +122,7 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
       il::Array2DEdit<double> ref_ars_arank = ars_arank.Edit();
       il::blas(
           1.0, A.view(il::Range{0, n0 * p}, il::Range{r * p, (r + 1) * p}),
-          il::MatrixOperator::Tranpose,
+          il::MatrixOperator::Transpose,
           A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
           0.0, il::io, ref_ars_arank);
       // Compute (Ar*.Arank).Brank
@@ -164,18 +141,18 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
     }
     frobenius_low_rank += 2 * scalar_product + frobenius_norm_ab;
 
-    i0_search = hmat::searchI0(M, A, range0, range1, i0_used, i1_search, rank);
+    i0_search = il::searchI0(M, A, range0, range1, i0_used, i1_search, rank);
     ++rank;
 
     //    il::Array2D<double> low_rank =
-    //        hmat::lowRankApproximation(M, range0, range1, A, B, rank);
-    //    const double forbenius_norm_low_rank = hmat::frobeniusNorm(low_rank);
+    //        il::lowRankApproximation(M, range0, range1, A, B, rank);
+    //    const double forbenius_norm_low_rank = il::frobeniusNorm(low_rank);
 
     //     Just to check
     //    il::Array2D<double> difference_matrix =
-    //        hmat::fullDifference(M, range0, range1, A, B, rank);
+    //        il::fullDifference(M, range0, range1, A, B, rank);
     //    frobenius_norm_difference =
-    //        hmat::frobeniusNorm(difference_matrix);
+    //        il::frobeniusNorm(difference_matrix);
 
     if (i0_search == -1 ||
         frobenius_norm_ab <= il::ipow<2>(epsilon) * frobenius_low_rank ||
@@ -185,16 +162,16 @@ SmallRank<double> adaptiveCrossApproximation(const hmat::Matrix<p> &M,
   }
 
   //  il::Array2D<double> difference_matrix =
-  //      hmat::fullDifference(M, range0, range1, A, B, rank);
-  //  frobenius_norm_difference = hmat::frobeniusNorm(difference_matrix);
-  //  const double frobenius_norm_matrix =  frobeniusNorm(hmat::fullMatrix(M,
+  //      il::fullDifference(M, range0, range1, A, B, rank);
+  //  frobenius_norm_difference = il::frobeniusNorm(difference_matrix);
+  //  const double frobenius_norm_matrix =  frobeniusNorm(il::fullMatrix(M,
   //  range0, range1));
   //  IL_EXPECT_MEDIUM(std::isfinite(frobenius_norm_difference));
   //  IL_EXPECT_MEDIUM(std::isfinite(frobenius_norm_matrix));
   //  std::cout << "Relative Error: " << frobenius_norm_difference /
   //  frobenius_norm_matrix << std::endl;
 
-  return hmat::SmallRank<double>{std::move(A), std::move(B)};
+  return il::SmallRank<double>{std::move(A), std::move(B)};
 }
 
-}  // namespace hmat
+}  // namespace il

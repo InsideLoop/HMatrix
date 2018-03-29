@@ -10,7 +10,7 @@
 
 #include "Matrix.h"
 
-namespace hmat {
+namespace il {
 
 double frobeniusNorm(const il::Array2D<double> &A) {
   double ans = 0.0;
@@ -23,7 +23,7 @@ double frobeniusNorm(const il::Array2D<double> &A) {
 }
 
 template <il::int_t p>
-il::StaticArray2D<double, p, p> residual(const hmat::Matrix<p> &M,
+il::StaticArray2D<double, p, p> residual(const il::Matrix<double, p> &M,
                                          const il::Array2D<double> &A,
                                          const il::Array2D<double> &B,
                                          il::Range range0, il::Range range1,
@@ -50,7 +50,7 @@ il::StaticArray2D<double, p, p> residual(const hmat::Matrix<p> &M,
 };
 
 template <il::int_t p>
-il::StaticArray2D<double, p, p> lowRankSubmatrix(const hmat::Matrix<p> &M,
+il::StaticArray2D<double, p, p> lowRankSubmatrix(const il::Matrix<double, p> &M,
                                                  const il::Array2D<double> &A,
                                                  const il::Array2D<double> &B,
                                                  il::int_t i0, il::int_t i1,
@@ -66,7 +66,7 @@ il::StaticArray2D<double, p, p> lowRankSubmatrix(const hmat::Matrix<p> &M,
 };
 
 template <il::int_t p>
-il::int_t searchI1(const hmat::Matrix<p> &M, const il::Array2D<double> &A,
+il::int_t searchI1(const il::Matrix<double, p> &M, const il::Array2D<double> &A,
                    const il::Array2D<double> &B, il::Range range0,
                    il::Range range1, il::int_t i0_search,
                    const il::Array<il::int_t> &i1_used) {
@@ -106,7 +106,7 @@ il::int_t searchI1(const hmat::Matrix<p> &M, const il::Array2D<double> &A,
 }
 
 template <il::int_t p>
-il::int_t searchI0(const hmat::Matrix<p> &M, const il::Array2D<double> &A,
+il::int_t searchI0(const il::Matrix<double, p> &M, const il::Array2D<double> &A,
                    il::Range range0, il::Range range1,
                    const il::Array<il::int_t> i0_used, il::int_t i1,
                    il::int_t rank) {
@@ -149,7 +149,7 @@ il::int_t searchI0(const hmat::Matrix<p> &M, const il::Array2D<double> &A,
 }
 
 template <il::int_t p>
-il::Array2D<double> fullMatrix(const hmat::Matrix<p> &M, il::Range range0,
+il::Array2D<double> fullMatrix(const il::Matrix<double, p> &M, il::Range range0,
                                il::Range range1) {
   const il::int_t n0 = range0.end - range0.begin;
   const il::int_t n1 = range1.end - range1.begin;
@@ -169,7 +169,7 @@ il::Array2D<double> fullMatrix(const hmat::Matrix<p> &M, il::Range range0,
 }
 
 template <il::int_t p>
-il::Array2D<double> lowRankApproximation(const hmat::Matrix<p> &M,
+il::Array2D<double> lowRankApproximation(const il::Matrix<double, p> &M,
                                          il::Range range0, il::Range range1,
                                          const il::Array2D<double> &A,
                                          const il::Array2D<double> &B,
@@ -180,7 +180,7 @@ il::Array2D<double> lowRankApproximation(const hmat::Matrix<p> &M,
   for (il::int_t i1 = 0; i1 < n1; ++i1) {
     for (il::int_t i0 = 0; i0 < n0; ++i0) {
       il::StaticArray2D<double, p, p> local =
-          hmat::lowRankSubmatrix(M, A, B, i0, i1, r);
+          il::lowRankSubmatrix(M, A, B, i0, i1, r);
       for (il::int_t b1 = 0; b1 < p; ++b1) {
         for (il::int_t b0 = 0; b0 < p; ++b0) {
           ans(i0 * p + b0, i1 * p + b1) = local(b0, b1);
@@ -192,8 +192,8 @@ il::Array2D<double> lowRankApproximation(const hmat::Matrix<p> &M,
 }
 
 template <il::int_t p>
-il::Array2D<double> fullDifference(const hmat::Matrix<p> &M, il::Range range0,
-                                   il::Range range1,
+il::Array2D<double> fullDifference(const il::Matrix<double, p> &M,
+                                   il::Range range0, il::Range range1,
                                    const il::Array2D<double> &A,
                                    const il::Array2D<double> &B, il::int_t r) {
   const il::int_t n0 = range0.end - range0.begin;
@@ -214,4 +214,4 @@ il::Array2D<double> fullDifference(const hmat::Matrix<p> &M, il::Range range0,
   return ans;
 }
 
-}  // namespace hmat
+}  // namespace il
