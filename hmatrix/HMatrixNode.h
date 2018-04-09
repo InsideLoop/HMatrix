@@ -23,6 +23,7 @@ class HMatrixNode {
   bool isFullRank() const;
   bool isLowRank() const;
   bool isHierarchical() const;
+  il::HMatrixType type() const;
   void SetEmpty();
   void SetHierarchical();
   void SetFullRank(il::Array2D<T> A);
@@ -89,6 +90,13 @@ bool HMatrixNode<T>::isLowRank() const {
 template <typename T>
 bool HMatrixNode<T>::isHierarchical() const {
   return !empty_ && matrix_type_ == il::HMatrixType::Hierarchical;
+}
+
+template <typename T>
+il::HMatrixType HMatrixNode<T>::type() const {
+  IL_EXPECT_MEDIUM(!empty_);
+
+  return matrix_type_;
 }
 
 template <typename T>

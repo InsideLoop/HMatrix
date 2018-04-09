@@ -16,6 +16,16 @@ Indices and tables
 * :ref:`search`
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :caption: H-Matrix
+   :maxdepth: 1
+
+   hmatrix/hmatrix.rst
+
+.. toctree::
+   :caption: Tools to build a H-Matrix
+   :maxdepth: 1
+
+   cluster/cluster.rst
+   cluster/hmatrixtree.rst
+   cluster/final.rst
 

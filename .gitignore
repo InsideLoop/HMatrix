@@ -1,6 +1,8 @@
 .idea
 cmake-build-debug
 doc/_build
-doc/html
-doc/latex
-doc/xml
+doc/_static/
+doc/_templates/
+doc/html/
+doc/latex/
+doc/xml/

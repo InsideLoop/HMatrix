@@ -27,6 +27,7 @@ class HMatrix {
   bool isFullRank(il::spot_t s) const;
   bool isLowRank(il::spot_t s) const;
   bool isHierarchical(il::spot_t s) const;
+  il::HMatrixType type(il::spot_t s) const;
 
   void SetHierarchical(il::spot_t s);
   void SetFullRank(il::spot_t s, il::int_t n0, il::int_t n1);
@@ -82,6 +83,11 @@ bool HMatrix<T>::isLowRank(il::spot_t s) const {
 template <typename T>
 bool HMatrix<T>::isHierarchical(il::spot_t s) const {
   return tree_[s.index].isHierarchical();
+}
+
+template <typename T>
+il::HMatrixType HMatrix<T>::type(il::spot_t s) const {
+  return tree_[s.index].
 }
 
 template <typename T>
