@@ -1,2 +1,6 @@
 .idea
 cmake-build-debug
+doc/_build
+doc/html
+doc/latex
+doc/xml

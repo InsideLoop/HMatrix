@@ -1,14 +1,5 @@
-Test in between an array of structure and a structure of array for the
-clustering part. Note that for the array of structure, the dimension is known at
-compile time.
-dim = 2
-nb_nodes = 1000000
-leaf_size = 10
-nb_times = 100
-Structure of array: 0.20s
-Array of structure: 0.16s
-
-So it is better to use an array of structure with dimension known at compile
-time. It is expected as elements that are moved together are grouped together
-in this kind of structure.
-
+Performance for FirFft with a FFT window of 1024, on Skylake, with MKL
+- Float64: In between 5.9e-5 and 8.1e-5 which represents in between
+  12'000'000 elements per second and 17'000'000 elements per second
+- Float32: In between 3.2e-5 and 7.0e-5 which represents in between
+  14'000'000 elements per second and 32'000'000 elements per second
