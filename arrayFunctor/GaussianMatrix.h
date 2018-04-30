@@ -59,6 +59,8 @@ il::int_t GaussianMatrix<T>::size(il::int_t d) const {
     default:
       IL_UNREACHABLE;
   }
+  IL_UNREACHABLE;
+  return -1;
 };
 
 template <typename T>

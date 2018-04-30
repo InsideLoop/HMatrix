@@ -105,7 +105,7 @@ LowRank<double> adaptiveCrossApproximation(const il::MatrixGenerator<double>& M,
     il::StaticArray2D<double, p, p> frobenius_A{0.0};
     il::blas(1.0,
              A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
-             il::MatrixOperator::Transpose,
+             il::Dot::Transpose,
              A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
              0.0, il::io, frobenius_A.Edit());
     // New value for the norm of B
@@ -113,7 +113,7 @@ LowRank<double> adaptiveCrossApproximation(const il::MatrixGenerator<double>& M,
     il::blas(1.0,
              B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
              B.view(il::Range{rank * p, (rank + 1) * p}, il::Range{0, n1 * p}),
-             il::MatrixOperator::Transpose, 0.0, il::io, frobenius_B.Edit());
+             il::Dot::Transpose, 0.0, il::io, frobenius_B.Edit());
     // compute ||A_k B_k||^2
     double frobenius_norm_ab = 0.0;
     for (il::int_t b1 = 0; b1 < p; ++b1) {
@@ -129,7 +129,7 @@ LowRank<double> adaptiveCrossApproximation(const il::MatrixGenerator<double>& M,
       il::Array2DEdit<double> ref_ars_arank = ars_arank.Edit();
       il::blas(
           1.0, A.view(il::Range{0, n0 * p}, il::Range{r * p, (r + 1) * p}),
-          il::MatrixOperator::Transpose,
+          il::Dot::Transpose,
           A.view(il::Range{0, n0 * p}, il::Range{rank * p, (rank + 1) * p}),
           0.0, il::io, ref_ars_arank);
       // Compute (Ar*.Arank).Brank

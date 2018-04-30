@@ -1,11 +1,11 @@
+#include <gtest/gtest.h>
+
 #include <hmatrix/HMatrix.h>
 #include <luhmatrix/LuHMatrix.h>
-#include <luhmatrix/solve.h>
 #include <luhmatrix/lu.h>
+#include <luhmatrix/solve.h>
 
-#include <iostream>
-
-int main() {
+TEST(solve, test0) {
   il::HMatrix<double> H{};
   const il::spot_t s = H.root();
   H.SetHierarchical(s);
@@ -49,5 +49,8 @@ int main() {
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
   il::solve(LUH, LUH.root(), il::io, y.Edit());
 
-  return 0;
+  const double eps = 1.0e-10;
+
+  ASSERT_TRUE(il::abs(y[0] - 1.0) <= eps && il::abs(y[1] - 2.0) <= eps &&
+              il::abs(y[2] - 3.0) <= eps && il::abs(y[3] - 4.0) <= eps);
 }

@@ -4,18 +4,18 @@
 #include <il/Array2D.h>
 #include <il/Map.h>
 
-#include <hmatrix/HMatrixNode.h>
 #include <hmatrix/HMatrixType.h>
+#include <luhmatrix/LuHMatrixNode.h>
 
 namespace il {
 
-template <typename T>
-class HMatrix {
+template <typename T, typename I>
+class LuHMatrix {
  private:
-  il::Array<il::HMatrixNode<T>> tree_;
+  il::Array<il::LuHMatrixNode<T, I>> tree_;
 
  public:
-  HMatrix();
+  LuHMatrix();
 
   il::int_t size(il::int_t d) const;
   il::int_t size(il::int_t d, il::spot_t s) const;
@@ -35,6 +35,8 @@ class HMatrix {
 
   il::Array2DView<T> asFullRank(il::spot_t s) const;
   il::Array2DEdit<T> AsFullRank(il::spot_t s);
+  il::ArrayView<I> asFullRankPivot(il::spot_t s) const;
+  il::ArrayEdit<I> AsFullRankPivot(il::spot_t s);
 
   il::Array2DView<T> asLowRankA(il::spot_t s) const;
   il::Array2DEdit<T> AsLowRankA(il::spot_t s);
@@ -47,105 +49,118 @@ class HMatrix {
   bool isBuilt(il::spot_t s) const;
 };
 
-template <typename T>
-HMatrix<T>::HMatrix() : tree_{1} {}
+template <typename T, typename I>
+LuHMatrix<T, I>::LuHMatrix() : tree_{1} {}
 
-template <typename T>
-il::int_t HMatrix<T>::size(il::int_t d) const {
+template <typename T, typename I>
+il::int_t LuHMatrix<T, I>::size(il::int_t d) const {
   return size(d, il::spot_t{0});
 }
 
-template <typename T>
-il::spot_t HMatrix<T>::root() const {
+template <typename T, typename I>
+il::spot_t LuHMatrix<T, I>::root() const {
   return il::spot_t{0};
 }
 
-template <typename T>
-il::spot_t HMatrix<T>::parent(il::spot_t s) const {
+template <typename T, typename I>
+il::spot_t LuHMatrix<T, I>::parent(il::spot_t s) const {
   return il::spot_t{s.index / 4};
 }
 
-template <typename T>
-il::spot_t HMatrix<T>::child(il::spot_t s, il::int_t i0, il::int_t i1) const {
+template <typename T, typename I>
+il::spot_t LuHMatrix<T, I>::child(il::spot_t s, il::int_t i0,
+                                  il::int_t i1) const {
   return il::spot_t{4 * s.index + 1 + i1 * 2 + i0};
 }
 
-template <typename T>
-bool HMatrix<T>::isFullRank(il::spot_t s) const {
+template <typename T, typename I>
+bool LuHMatrix<T, I>::isFullRank(il::spot_t s) const {
   return tree_[s.index].isFullRank();
 }
 
-template <typename T>
-bool HMatrix<T>::isLowRank(il::spot_t s) const {
+template <typename T, typename I>
+bool LuHMatrix<T, I>::isLowRank(il::spot_t s) const {
   return tree_[s.index].isLowRank();
 }
 
-template <typename T>
-bool HMatrix<T>::isHierarchical(il::spot_t s) const {
+template <typename T, typename I>
+bool LuHMatrix<T, I>::isHierarchical(il::spot_t s) const {
   return tree_[s.index].isHierarchical();
 }
 
-template <typename T>
-il::HMatrixType HMatrix<T>::type(il::spot_t s) const {
+template <typename T, typename I>
+il::HMatrixType LuHMatrix<T, I>::type(il::spot_t s) const {
   return tree_[s.index].type();
 }
 
-template <typename T>
-void HMatrix<T>::SetHierarchical(il::spot_t s) {
+template <typename T, typename I>
+void LuHMatrix<T, I>::SetHierarchical(il::spot_t s) {
   tree_[s.index].SetHierarchical();
   if (tree_.size() < 4 * (s.index + 1) + 1) {
     tree_.Resize(4 * (s.index + 1) + 1);
   }
 }
 
-template <typename T>
-void HMatrix<T>::SetFullRank(il::spot_t s, il::int_t n0, il::int_t n1) {
-  tree_[s.index].SetFullRank(il::Array2D<T>{n0, n1});
+template <typename T, typename I>
+void LuHMatrix<T, I>::SetFullRank(il::spot_t s, il::int_t n0, il::int_t n1) {
+  IL_EXPECT_MEDIUM(n0 == n1);
+
+  tree_[s.index].SetFullRank(il::Array2D<T>{n0, n1}, il::Array<I>{n0});
 }
 
-template <typename T>
-void HMatrix<T>::SetLowRank(il::spot_t s, il::int_t n0, il::int_t n1,
-                            il::int_t r) {
+template <typename T, typename I>
+void LuHMatrix<T, I>::SetLowRank(il::spot_t s, il::int_t n0, il::int_t n1,
+                                 il::int_t r) {
   tree_[s.index].SetLowRank(il::Array2D<T>{n0, r}, il::Array2D<T>{n1, r});
 }
 
-template <typename T>
-il::Array2DView<T> HMatrix<T>::asFullRank(il::spot_t s) const {
+template <typename T, typename I>
+il::Array2DView<T> LuHMatrix<T, I>::asFullRank(il::spot_t s) const {
   return tree_[s.index].asFullRank().view();
 }
 
-template <typename T>
-il::Array2DEdit<T> HMatrix<T>::AsFullRank(il::spot_t s) {
+template <typename T, typename I>
+il::Array2DEdit<T> LuHMatrix<T, I>::AsFullRank(il::spot_t s) {
   return tree_[s.index].AsFullRank().Edit();
 }
 
-template <typename T>
-il::Array2DView<T> HMatrix<T>::asLowRankA(il::spot_t s) const {
+template <typename T, typename I>
+il::ArrayView<I> LuHMatrix<T, I>::asFullRankPivot(il::spot_t s) const {
+  return tree_[s.index].asFullRankPivot().view();
+};
+
+template <typename T, typename I>
+il::ArrayEdit<I> LuHMatrix<T, I>::AsFullRankPivot(il::spot_t s) {
+  return tree_[s.index].AsFullRankPivot().Edit();
+};
+
+template <typename T, typename I>
+il::Array2DView<T> LuHMatrix<T, I>::asLowRankA(il::spot_t s) const {
   return tree_[s.index].asLowRankA().view();
 }
 
-template <typename T>
-il::Array2DEdit<T> HMatrix<T>::AsLowRankA(il::spot_t s) {
+template <typename T, typename I>
+il::Array2DEdit<T> LuHMatrix<T, I>::AsLowRankA(il::spot_t s) {
   return tree_[s.index].AsLowRankA().Edit();
 }
 
-template <typename T>
-il::Array2DView<T> HMatrix<T>::asLowRankB(il::spot_t s) const {
+template <typename T, typename I>
+il::Array2DView<T> LuHMatrix<T, I>::asLowRankB(il::spot_t s) const {
   return tree_[s.index].asLowRankB().view();
 }
 
-template <typename T>
-il::Array2DEdit<T> HMatrix<T>::AsLowRankB(il::spot_t s) {
+template <typename T, typename I>
+il::Array2DEdit<T> LuHMatrix<T, I>::AsLowRankB(il::spot_t s) {
   return tree_[s.index].AsLowRankB().Edit();
 }
 
-template <typename T>
-bool HMatrix<T>::isBuilt() const {
+template <typename T, typename I>
+bool LuHMatrix<T, I>::isBuilt() const {
   return isBuilt(root());
 }
 
-template <typename T>
-il::int_t HMatrix<T>::size(il::int_t d, il::spot_t s) const {
+template <typename T, typename I>
+il::int_t LuHMatrix<T, I>::size(il::int_t d, il::spot_t s) const {
   if (tree_[s.index].isFullRank() || tree_[s.index].isLowRank()) {
     return tree_[s.index].size(d);
   } else if (tree_[s.index].isEmpty()) {
@@ -169,8 +184,8 @@ il::int_t HMatrix<T>::size(il::int_t d, il::spot_t s) const {
   return -1;
 }
 
-template <typename T>
-bool HMatrix<T>::isBuilt(il::spot_t s) const {
+template <typename T, typename I>
+bool LuHMatrix<T, I>::isBuilt(il::spot_t s) const {
   if (tree_[s.index].isFullRank() || tree_[s.index].isLowRank()) {
     return true;
   } else if (tree_[s.index].isEmpty()) {

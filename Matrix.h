@@ -18,26 +18,26 @@ class Matrix : public MatrixGenerator<double> {
            il::Array2DEdit<double> M) const override;
 };
 
-Matrix::Matrix(const il::Array2D<double>& point, double alpha)
+inline Matrix::Matrix(const il::Array2D<double>& point, double alpha)
     : point_{point}, alpha_{alpha} {
   IL_EXPECT_FAST(point_.size(1) == 2);
 };
 
-il::int_t Matrix::size(il::int_t d) const {
+inline il::int_t Matrix::size(il::int_t d) const {
   IL_EXPECT_MEDIUM(d == 0 || d == 1);
 
   return point_.size(0);
 };
 
-il::int_t Matrix::blockSize() const { return 1; }
+inline il::int_t Matrix::blockSize() const { return 1; }
 
-il::int_t Matrix::sizeAsBlocks(il::int_t d) const {
+inline il::int_t Matrix::sizeAsBlocks(il::int_t d) const {
   IL_EXPECT_MEDIUM(d == 0 || d == 1);
 
   return point_.size(0);
 }
 
-void Matrix::set(il::int_t b0, il::int_t b1, il::io_t,
+inline void Matrix::set(il::int_t b0, il::int_t b1, il::io_t,
                  il::Array2DEdit<double> M) const {
   IL_EXPECT_MEDIUM(M.size(0) % blockSize() == 0);
   IL_EXPECT_MEDIUM(M.size(1) % blockSize() == 0);

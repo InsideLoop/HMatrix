@@ -22,7 +22,7 @@ inline void dot_rec(const il::HMatrix<double>& A, il::spot_t s,
     il::Array2DView<double> b = A.asLowRankB(s);
     const il::int_t r = a.size(1);
     il::Array<double> tmp{r, 0.0};
-    il::blas(1.0, b, il::MatrixOperator::Transpose, x, 0.0, il::io, tmp.Edit());
+    il::blas(1.0, b, il::Dot::Transpose, x, 0.0, il::io, tmp.Edit());
     il::blas(1.0, a, tmp.view(), 1.0, il::io, y);
     return;
   } else if (A.isHierarchical(s)) {

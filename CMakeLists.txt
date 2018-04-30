@@ -47,6 +47,8 @@ add_executable(HMatrix
         hmatrix/HMatrixNode.h
         hmatrix/HMatrixUtils.h
         hmatrix/LowRank.h
+        luhmatrix/lu.cpp
+        luhmatrix/solve.cpp
         linearAlgebra/blas/OldHMatrix.h
         linearAlgebra/factorization/LU.h
         linearAlgebra/factorization/LU.cpp
@@ -56,7 +58,7 @@ add_executable(HMatrix
         arrayFunctor/MatrixGenerator.h
         main.cpp
         Matrix.h
-        arrayFunctor/ArrayFunctor.h)
+        arrayFunctor/ArrayFunctor.h luhmatrix/LuHMatrix.h luhmatrix/LuHMatrixNode.h luhmatrix/lu.h luhmatrix/solve.h luhmatrix/solve.cpp)
 
 target_include_directories(HMatrix PRIVATE /home/fayard/Documents/Projects/InsideLoop/InsideLoop /home/fayard/Documents/Projects/EPFL/HMatrix)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
@@ -67,10 +69,12 @@ target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
 ################################################################################
 
 set(UNIT_TEST_FILES
+        luhmatrix/lu.cpp
+        luhmatrix/solve.cpp
     gtest/src/gtest-all.cc
     hmatrix/_test/HMatrixUtils_test.cpp
     compression/_test/adaptiveCrossApproximation_test.cpp
-    )
+    luhmatrix/_test/solve_test.cpp)
 
 add_executable(HMatrixUnitTest ${SOURCE_FILES} ${UNIT_TEST_FILES} test.cpp)
 target_include_directories(HMatrixUnitTest PUBLIC ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/gtest)

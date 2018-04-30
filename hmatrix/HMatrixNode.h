@@ -70,6 +70,8 @@ il::int_t HMatrixNode<T>::size(il::int_t d) const {
   } else if (matrix_type_ == il::HMatrixType::FullRank) {
     return A_.size(d);
   }
+  IL_UNREACHABLE;
+  return -1;
 }
 
 template <typename T>
