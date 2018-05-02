@@ -16,8 +16,9 @@ void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
 void lowerLeft(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
                il::io_t, il::LuHMatrix<double, int>& LU);
 void lowerRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
-               il::io_t, il::LuHMatrix<double, int>& LU);
+                il::io_t, il::LuHMatrix<double, int>& LU);
 
-void copy(il::Array2DView<double> A, il::io_t, il::Array2DEdit<double> B);
+void copy(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
+          il::LuHMatrix<double, int>& LU);
 
 }  // namespace il

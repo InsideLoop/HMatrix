@@ -58,7 +58,7 @@ add_executable(HMatrix
         arrayFunctor/MatrixGenerator.h
         main.cpp
         Matrix.h
-        arrayFunctor/ArrayFunctor.h luhmatrix/LuHMatrix.h luhmatrix/LuHMatrixNode.h luhmatrix/lu.h luhmatrix/solve.h luhmatrix/solve.cpp)
+        arrayFunctor/ArrayFunctor.h luhmatrix/LuHMatrix.h luhmatrix/LuHMatrixNode.h luhmatrix/lu.h luhmatrix/solve.h luhmatrix/solve.cpp luhmatrix/hblas.h luhmatrix/hblas.cpp)
 
 target_include_directories(HMatrix PRIVATE /home/fayard/Documents/Projects/InsideLoop/InsideLoop /home/fayard/Documents/Projects/EPFL/HMatrix)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})

@@ -27,6 +27,8 @@ class LuHMatrixNode {
   bool isLowRank() const;
   bool isHierarchical() const;
   il::HMatrixType type() const;
+  il::int_t rankOfLowRank() const;
+  void UpdateRank(il::int_t r);
   void SetEmpty();
   void SetHierarchical();
   void SetFullRank(il::Array2D<T> A, il::Array<I> pivot);
@@ -106,6 +108,23 @@ il::HMatrixType LuHMatrixNode<T, I>::type() const {
 
   return matrix_type_;
 }
+
+template <typename T, typename I>
+il::int_t LuHMatrixNode<T, I>::rankOfLowRank() const {
+  IL_EXPECT_MEDIUM(type() == il::HMatrixType::LowRank);
+  IL_EXPECT_MEDIUM(A_.size(1) == B_.size(1));
+
+  return A_.size(1);
+};
+
+template <typename T, typename I>
+void LuHMatrixNode<T, I>::UpdateRank(il::int_t r) {
+  IL_EXPECT_MEDIUM(type() == il::HMatrixType::LowRank);
+  IL_EXPECT_MEDIUM(A_.size(1) == B_.size(1));
+
+  A_.Resize(A_.size(0), r);
+  B_.Resize(B_.size(0), r);
+};
 
 template <typename T, typename I>
 void LuHMatrixNode<T, I>::SetEmpty() {

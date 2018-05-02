@@ -1,6 +1,8 @@
 #include <luhmatrix/lu.h>
 
 #include <il/blas.h>
+#include <luhmatrix/solve.h>
+#include <luhmatrix/hblas.h>
 
 #ifdef IL_MKL
 #include <mkl_cblas.h>
@@ -68,8 +70,8 @@ void luForFull(il::io_t, il::Array2DEdit<double> A, il::ArrayEdit<int> pivot) {
 void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
                 il::io_t, il::LuHMatrix<double, int>& LU) {
   const il::spot_t sh00 = H.child(sh, 0, 0);
+  const il::spot_t sh01 = H.child(sh, 0, 1);
   if (H.isFullRank(sh00)) {
-    const il::spot_t sh01 = H.child(sh, 0, 1);
     const il::spot_t slu00 = LU.child(slu, 0, 0);
     const il::spot_t slu01 = LU.child(slu, 0, 1);
     IL_EXPECT_MEDIUM(LU.isFullRank(slu00))
@@ -106,8 +108,8 @@ void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
         const CBLAS_UPLO uplo = CblasLower;
         const CBLAS_TRANSPOSE transa = CblasNoTrans;
         const CBLAS_DIAG diag = CblasUnit;
-        const MKL_INT m = static_cast<MKL_INT>(LLU00.size(0));
-        const MKL_INT n = static_cast<MKL_INT>(LLU00.size(1));
+        const MKL_INT m = static_cast<MKL_INT>(LUA.size(0));
+        const MKL_INT n = static_cast<MKL_INT>(LUA.size(1));
         const double alpha = 1.0;
         const MKL_INT lda = static_cast<MKL_INT>(LLU00.stride(1));
         const MKL_INT ldb = static_cast<MKL_INT>(LUA.stride(1));
@@ -117,7 +119,13 @@ void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
     } else {
       IL_UNREACHABLE;
     }
+  } else if (H.isHierarchical(sh00)) {
+    const il::spot_t slu01 = LU.child(slu, 0, 1);
+    il::copy(H, sh01, slu01, il::io, LU);
+    const il::spot_t slu00 = LU.child(slu, 0, 0);
+    il::solveLower(LU, sh00, slu01, il::io, LU);
   } else {
+    IL_EXPECT_MEDIUM(H.isLowRank(sh00));
     IL_UNREACHABLE;
   }
 }
@@ -125,6 +133,7 @@ void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
 void lowerLeft(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
                il::io_t, il::LuHMatrix<double, int>& LU) {
   const il::spot_t sh00 = H.child(sh, 0, 0);
+  const il::spot_t sh10 = H.child(sh, 1, 0);
   if (H.isFullRank(sh00)) {
     const il::spot_t sh10 = H.child(sh, 1, 0);
     const il::spot_t slu00 = LU.child(slu, 0, 0);
@@ -157,6 +166,11 @@ void lowerLeft(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
     } else {
       IL_UNREACHABLE;
     }
+  } else if (H.isHierarchical(sh00)) {
+    const il::spot_t slu10 = LU.child(slu, 1, 0);
+    il::copy(H, sh10, slu10, il::io, LU);
+    const il::spot_t slu00 = LU.child(slu, 0, 0);
+    il::solveUpper(LU, sh00, slu10, il::io, LU);
   } else {
     IL_UNREACHABLE;
   }
@@ -194,18 +208,45 @@ void lowerRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
       IL_UNREACHABLE;
     }
   } else {
+    const il::spot_t sh11 = H.child(sh, 1, 1);
+    const il::spot_t slu10 = LU.child(slu, 1, 0);
+    const il::spot_t slu01 = LU.child(slu, 0, 1);
+    const il::spot_t slu11 = LU.child(slu, 1, 1);
+    il::copy(H, sh11, slu11, il::io, LU);
+    il::blas(-1.0, LU, slu10, LU, slu01, 1.0, slu11, il::io, LU);
+    IL_EXPECT_MEDIUM()
+
     IL_UNREACHABLE;
   }
 }
 
-void copy(il::Array2DView<double> A, il::io_t, il::Array2DEdit<double> B) {
-  IL_EXPECT_MEDIUM(A.size(0) == B.size(0));
-  IL_EXPECT_MEDIUM(A.size(1) == B.size(1));
-
-  for (il::int_t i1 = 0; i1 < A.size(1); ++i1) {
-    for (il::int_t i0 = 0; i0 < A.size(0); ++i0) {
-      B(i0, i1) = A(i0, i1);
-    }
+void copy(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
+          il::LuHMatrix<double, int>& LU) {
+  if (H.isFullRank(sh)) {
+    il::Array2DView<double> a = H.asFullRank(sh);
+    LU.SetFullRank(slu, a.size(0), a.size(1));
+    il::copy(a, il::io, LU.AsFullRank(slu));
+  } else if (H.isLowRank(sh)) {
+    il::Array2DView<double> a = H.asLowRankA(sh);
+    il::Array2DView<double> b = H.asLowRankA(sh);
+    LU.SetLowRank(slu, a.size(0), b.size(0), a.size(1));
+    il::copy(a, il::io, LU.AsLowRankA(slu));
+    il::copy(b, il::io, LU.AsLowRankB(slu));
+  } else {
+    IL_EXPECT_MEDIUM(H.isHierarchical(sh));
+    LU.SetHierarchical(slu);
+    const il::spot_t sh00 = H.child(sh, 0, 0);
+    const il::spot_t slu00 = LU.child(slu, 0, 0);
+    il::copy(H, sh00, slu00, il::io, LU);
+    const il::spot_t sh01 = H.child(sh, 0, 1);
+    const il::spot_t slu01 = LU.child(slu, 0, 1);
+    il::copy(H, sh01, slu01, il::io, LU);
+    const il::spot_t sh10 = H.child(sh, 1, 0);
+    const il::spot_t slu10 = LU.child(slu, 1, 0);
+    il::copy(H, sh10, slu10, il::io, LU);
+    const il::spot_t sh11 = H.child(sh, 1, 1);
+    const il::spot_t slu11 = LU.child(slu, 1, 1);
+    il::copy(H, sh11, slu11, il::io, LU);
   }
 }
 

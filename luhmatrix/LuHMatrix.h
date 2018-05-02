@@ -28,6 +28,8 @@ class LuHMatrix {
   bool isLowRank(il::spot_t s) const;
   bool isHierarchical(il::spot_t s) const;
   il::HMatrixType type(il::spot_t s) const;
+  il::int_t rankOfLowRank(il::spot_t s) const;
+  void UpdateRank(il::spot_t s, il::int_t r);
 
   void SetHierarchical(il::spot_t s);
   void SetFullRank(il::spot_t s, il::int_t n0, il::int_t n1);
@@ -92,6 +94,20 @@ template <typename T, typename I>
 il::HMatrixType LuHMatrix<T, I>::type(il::spot_t s) const {
   return tree_[s.index].type();
 }
+
+template <typename T, typename I>
+il::int_t LuHMatrix<T, I>::rankOfLowRank(il::spot_t s) const {
+  IL_EXPECT_MEDIUM(type(s) == il::HMatrixType::LowRank);
+
+  return tree_[s.index].rankOfLowRank();
+};
+
+template <typename T, typename I>
+void LuHMatrix<T, I>::UpdateRank(il::spot_t s, il::int_t r) {
+  IL_EXPECT_MEDIUM(type(s) == il::HMatrixType::LowRank);
+
+  return tree_[s.index].UpdateRank(r);
+};
 
 template <typename T, typename I>
 void LuHMatrix<T, I>::SetHierarchical(il::spot_t s) {
