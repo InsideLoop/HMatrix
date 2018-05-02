@@ -69,8 +69,9 @@ target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
 ################################################################################
 
 set(UNIT_TEST_FILES
-        luhmatrix/lu.cpp
-        luhmatrix/solve.cpp
+    luhmatrix/lu.cpp
+    luhmatrix/solve.cpp
+    luhmatrix/hblas.cpp
     gtest/src/gtest-all.cc
     hmatrix/_test/HMatrixUtils_test.cpp
     compression/_test/adaptiveCrossApproximation_test.cpp

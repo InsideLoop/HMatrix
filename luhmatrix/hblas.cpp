@@ -1,13 +1,11 @@
-#pragma once
-
 #include <il/blas.h>
 #include <luhmatrix/hblas.h>
 
 namespace il {
 
-void blas(double alpha, const il::LuHMatrix<double, int>& A, il::spot_t sa,
-          const il::LuHMatrix<double, int>& B, il::spot_t sb, double beta,
-          il::spot_t sc, il::io_t, il::LuHMatrix<double, int>& C) {
+void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
+          const il::HMatrix<double>& B, il::spot_t sb, double beta,
+          il::spot_t sc, il::io_t, il::HMatrix<double>& C) {
   IL_EXPECT_MEDIUM(A.size(0, sa) == C.size(0, sc));
   IL_EXPECT_MEDIUM(B.size(1, sa) == C.size(1, sc));
   IL_EXPECT_MEDIUM(A.size(1, sa) == B.size(0, sb));
@@ -101,7 +99,7 @@ void blas(double alpha, const il::LuHMatrix<double, int>& A, il::spot_t sa,
       il::blas(1.0, ab, il::Dot::Transpose, ba, 0.0, il::io, tmp0.Edit());
       il::Array2D<double> tmp1{aa.size(0), ba.size(1)};
       il::blas(1.0, aa, tmp0.view(), 0.0, il::io, tmp1.Edit());
-      il::blasLowRank(alpha, tmp1.view(), ba, beta, sc, il::io, C);
+      il::blasLowRank(alpha, tmp1.view(), bb, beta, sc, il::io, C);
     } else if (A.isHierarchical(sa) && B.isLowRank(sb)) {
       IL_UNREACHABLE;
     } else if (A.isLowRank(sa) && B.isHierarchical(sb)) {
@@ -116,7 +114,7 @@ void blas(double alpha, const il::LuHMatrix<double, int>& A, il::spot_t sa,
   }
 }
 
-void blas(double alpha, const il::LuHMatrix<double, int>& A, il::spot_t s,
+void blas(double alpha, const il::HMatrix<double>& A, il::spot_t s,
           il::Array2DView<double> B, double beta, il::io_t,
           il::Array2DEdit<double> C) {
   IL_EXPECT_FAST(A.size(0, s) == C.size(0));
@@ -159,7 +157,7 @@ void blas(double alpha, const il::LuHMatrix<double, int>& A, il::spot_t s,
   }
 }
 
-void blas(double alpha, const il::LuHMatrix<double, int>& A, il::spot_t s,
+void blas(double alpha, const il::HMatrix<double>& A, il::spot_t s,
           il::Dot op, il::Array2DView<double> B, double beta, il::io_t,
           il::Array2DEdit<double> C) {
   IL_EXPECT_FAST(op == il::Dot::Transpose);
@@ -204,7 +202,7 @@ void blas(double alpha, const il::LuHMatrix<double, int>& A, il::spot_t s,
 }
 
 void blas(double alpha, il::Array2DView<double> A,
-          const il::LuHMatrix<double, int>& B, il::spot_t s, double beta,
+          const il::HMatrix<double>& B, il::spot_t s, double beta,
           il::io_t, il::Array2DEdit<double> C) {
   IL_EXPECT_FAST(A.size(0) == C.size(0));
   IL_EXPECT_FAST(A.size(1) == B.size(0, s));
@@ -248,7 +246,7 @@ void blas(double alpha, il::Array2DView<double> A,
 
 void blasLowRank(double alpha, il::Array2DView<double> A,
                  il::Array2DView<double> B, double beta, il::spot_t s, il::io_t,
-                 il::LuHMatrix<double, int>& C) {
+                 il::HMatrix<double>& C) {
   IL_EXPECT_FAST(A.size(1) == B.size(1));
   IL_EXPECT_FAST(A.size(0) == C.size(0, s));
   IL_EXPECT_FAST(B.size(0) == C.size(1, s));
@@ -262,12 +260,24 @@ void blasLowRank(double alpha, il::Array2DView<double> A,
     C.UpdateRank(s, r0 + r1);
     il::Array2DEdit<double> ca = C.AsLowRankA(s);
     il::Array2DEdit<double> cb = C.AsLowRankB(s);
+    il::Array2DEdit<double> cb_old =
+        cb.Edit(il::Range{0, cb.size(0)}, il::Range{0, r0});
+    for (il::int_t i1 = 0; i1 < cb_old.size(1); ++i1) {
+      for (il::int_t i0 = 0; i0 < cb_old.size(0); ++i0) {
+        cb_old(i0, i1) *= beta;
+      }
+    }
     il::Array2DEdit<double> ca_new =
         ca.Edit(il::Range{0, ca.size(0)}, il::Range{r0, r0 + r1});
     il::Array2DEdit<double> cb_new =
         cb.Edit(il::Range{0, cb.size(0)}, il::Range{r0, r0 + r1});
     il::copy(A, il::io, ca_new);
     il::copy(B, il::io, cb_new);
+    for (il::int_t i1 = 0; i1 < cb_new.size(1); ++i1) {
+      for (il::int_t i0 = 0; i0 < cb_new.size(0); ++i0) {
+        cb_new(i0, i1) *= alpha;
+      }
+    }
   } else if (C.isHierarchical(s)) {
     const il::spot_t s00 = C.child(s, 0, 0);
     const il::spot_t s10 = C.child(s, 1, 0);

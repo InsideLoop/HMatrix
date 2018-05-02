@@ -18,8 +18,8 @@
 
 namespace il {
 
-il::LuHMatrix<double, int> lu(const il::HMatrix<double>& H) {
-  il::LuHMatrix<double, int> LU{};
+il::HMatrix<double> lu(const il::HMatrix<double>& H) {
+  il::HMatrix<double> LU{};
   il::spot_t sh = H.root();
   il::spot_t slu = LU.root();
   lu(H, sh, slu, il::io, LU);
@@ -27,12 +27,13 @@ il::LuHMatrix<double, int> lu(const il::HMatrix<double>& H) {
 };
 
 void lu(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
-        il::LuHMatrix<double, int>& LU) {
+        il::HMatrix<double>& LU) {
   if (H.isFullRank(sh)) {
     il::Array2DView<double> F = H.asFullRank(sh);
     LU.SetFullRank(slu, F.size(0), F.size(1));
-    il::Array2DEdit<double> lu = LU.AsFullRank(slu);
-    il::ArrayEdit<int> pivot = LU.AsFullRankPivot(slu);
+    LU.ConvertToFullLu(slu);
+    il::Array2DEdit<double> lu = LU.AsFullLu(slu);
+    il::ArrayEdit<int> pivot = LU.AsFullLuPivot(slu);
     il::copy(F, il::io, lu);
     il::luForFull(il::io, lu, pivot);
   } else if (H.isHierarchical(sh)) {
@@ -68,15 +69,15 @@ void luForFull(il::io_t, il::Array2DEdit<double> A, il::ArrayEdit<int> pivot) {
 }
 
 void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
-                il::io_t, il::LuHMatrix<double, int>& LU) {
+                il::io_t, il::HMatrix<double>& LU) {
   const il::spot_t sh00 = H.child(sh, 0, 0);
   const il::spot_t sh01 = H.child(sh, 0, 1);
-  if (H.isFullRank(sh00)) {
+  if (H.isFullRank(sh00) || H.isFullLu(sh00)) {
     const il::spot_t slu00 = LU.child(slu, 0, 0);
     const il::spot_t slu01 = LU.child(slu, 0, 1);
-    IL_EXPECT_MEDIUM(LU.isFullRank(slu00))
-    il::ArrayView<int> PLU00 = LU.asFullRankPivot(slu00);
-    il::Array2DView<double> LLU00 = LU.asFullRank(slu00);
+    IL_EXPECT_MEDIUM(LU.isFullLu(slu00))
+    il::ArrayView<int> PLU00 = LU.asFullLuPivot(slu00);
+    il::Array2DView<double> LLU00 = LU.asFullLu(slu00);
     if (H.isLowRank(sh01)) {
       // We need to solve P.L.U = A.B^T. The solution is
       // U = (L^{-1}.P^{-1}.A).B^T . So B is just copied, and for the new A,
@@ -131,15 +132,15 @@ void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
 }
 
 void lowerLeft(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
-               il::io_t, il::LuHMatrix<double, int>& LU) {
+               il::io_t, il::HMatrix<double>& LU) {
   const il::spot_t sh00 = H.child(sh, 0, 0);
   const il::spot_t sh10 = H.child(sh, 1, 0);
-  if (H.isFullRank(sh00)) {
+  if (H.isFullRank(sh00) || H.isFullLu(sh00)) {
     const il::spot_t sh10 = H.child(sh, 1, 0);
     const il::spot_t slu00 = LU.child(slu, 0, 0);
     const il::spot_t slu10 = LU.child(slu, 1, 0);
-    IL_EXPECT_MEDIUM(LU.isFullRank(slu00))
-    il::Array2DView<double> ULU00 = LU.asFullRank(slu00);
+    IL_EXPECT_MEDIUM(LU.isFullLu(slu00))
+    il::Array2DView<double> ULU00 = LU.asFullLu(slu00);
     if (H.isLowRank(sh10)) {
       // We need to solve L.U = A.B^{T}. The solution is L = A.B^{T}.U^{-1}
       // which is L = A.((U^T)^{-1}.B)^T
@@ -170,14 +171,14 @@ void lowerLeft(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
     const il::spot_t slu10 = LU.child(slu, 1, 0);
     il::copy(H, sh10, slu10, il::io, LU);
     const il::spot_t slu00 = LU.child(slu, 0, 0);
-    il::solveUpper(LU, sh00, slu10, il::io, LU);
+    il::solveUpperTranspose(LU, sh00, slu10, il::io, LU);
   } else {
     IL_UNREACHABLE;
   }
 }
 
 void lowerRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
-                il::io_t, il::LuHMatrix<double, int>& LU) {
+                il::io_t, il::HMatrix<double>& LU) {
   const il::spot_t sh00 = H.child(sh, 0, 0);
   if (H.isFullRank(sh00)) {
     const il::spot_t sh11 = H.child(sh, 1, 1);
@@ -190,8 +191,9 @@ void lowerRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
       il::Array2DView<double> FH = H.asFullRank(sh11);
       IL_EXPECT_MEDIUM(FH.size(0) == FH.size(1));
       LU.SetFullRank(slu11, FH.size(0), FH.size(1));
-      il::Array2DEdit<double> A = LU.AsFullRank(slu11);
-      il::ArrayEdit<int> pivot = LU.AsFullRankPivot(slu11);
+      LU.ConvertToFullLu(slu11);
+      il::Array2DEdit<double> A = LU.AsFullLu(slu11);
+      il::ArrayEdit<int> pivot = LU.AsFullLuPivot(slu11);
       il::Array2DView<double> LA = LU.asLowRankA(slu10);
       il::Array2DView<double> LB = LU.asLowRankB(slu10);
       il::Array2DView<double> UA = LU.asLowRankA(slu01);
@@ -214,21 +216,19 @@ void lowerRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
     const il::spot_t slu11 = LU.child(slu, 1, 1);
     il::copy(H, sh11, slu11, il::io, LU);
     il::blas(-1.0, LU, slu10, LU, slu01, 1.0, slu11, il::io, LU);
-    IL_EXPECT_MEDIUM()
-
-    IL_UNREACHABLE;
+    il::lu(LU, slu11, slu11, il::io, LU);
   }
 }
 
 void copy(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
-          il::LuHMatrix<double, int>& LU) {
+          il::HMatrix<double>& LU) {
   if (H.isFullRank(sh)) {
     il::Array2DView<double> a = H.asFullRank(sh);
     LU.SetFullRank(slu, a.size(0), a.size(1));
     il::copy(a, il::io, LU.AsFullRank(slu));
   } else if (H.isLowRank(sh)) {
     il::Array2DView<double> a = H.asLowRankA(sh);
-    il::Array2DView<double> b = H.asLowRankA(sh);
+    il::Array2DView<double> b = H.asLowRankB(sh);
     LU.SetLowRank(slu, a.size(0), b.size(0), a.size(1));
     il::copy(a, il::io, LU.AsLowRankA(slu));
     il::copy(b, il::io, LU.AsLowRankB(slu));

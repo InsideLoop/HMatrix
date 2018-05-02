@@ -2,7 +2,7 @@
 
 namespace il {
 
-enum class HMatrixType { LowRank, FullRank, Hierarchical };
+enum class HMatrixType { FullRank, LowRank, Hierarchical, FullLu };
 
 struct SubHMatrix {
   il::Range range0;

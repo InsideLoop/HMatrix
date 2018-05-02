@@ -27,11 +27,16 @@ class HMatrix {
   bool isFullRank(il::spot_t s) const;
   bool isLowRank(il::spot_t s) const;
   bool isHierarchical(il::spot_t s) const;
+  bool isFullLu(il::spot_t s) const;
   il::HMatrixType type(il::spot_t s) const;
+
+  il::int_t rankOfLowRank(il::spot_t s) const;
+  void UpdateRank(il::spot_t s, il::int_t r);
 
   void SetHierarchical(il::spot_t s);
   void SetFullRank(il::spot_t s, il::int_t n0, il::int_t n1);
   void SetLowRank(il::spot_t s, il::int_t n0, il::int_t n1, il::int_t r);
+  void ConvertToFullLu(il::spot_t s);
 
   il::Array2DView<T> asFullRank(il::spot_t s) const;
   il::Array2DEdit<T> AsFullRank(il::spot_t s);
@@ -40,6 +45,11 @@ class HMatrix {
   il::Array2DEdit<T> AsLowRankA(il::spot_t s);
   il::Array2DView<T> asLowRankB(il::spot_t s) const;
   il::Array2DEdit<T> AsLowRankB(il::spot_t s);
+
+  il::ArrayView<int> asFullLuPivot(il::spot_t s) const;
+  il::ArrayEdit<int> AsFullLuPivot(il::spot_t s);
+  il::Array2DView<T> asFullLu(il::spot_t s) const;
+  il::Array2DEdit<T> AsFullLu(il::spot_t s);
 
   bool isBuilt() const;
 
@@ -86,8 +96,23 @@ bool HMatrix<T>::isHierarchical(il::spot_t s) const {
 }
 
 template <typename T>
+bool HMatrix<T>::isFullLu(il::spot_t s) const {
+  return tree_[s.index].isFullLu();
+}
+
+template <typename T>
 il::HMatrixType HMatrix<T>::type(il::spot_t s) const {
   return tree_[s.index].type();
+}
+
+template <typename T>
+il::int_t HMatrix<T>::rankOfLowRank(il::spot_t s) const {
+  return tree_[s.index].rankOfLowRank();
+}
+
+template <typename T>
+void HMatrix<T>::UpdateRank(il::spot_t s, il::int_t r) {
+  return tree_[s.index].UpdateRank(r);
 }
 
 template <typename T>
@@ -100,13 +125,20 @@ void HMatrix<T>::SetHierarchical(il::spot_t s) {
 
 template <typename T>
 void HMatrix<T>::SetFullRank(il::spot_t s, il::int_t n0, il::int_t n1) {
-  tree_[s.index].SetFullRank(il::Array2D<T>{n0, n1});
+//  tree_[s.index].SetFullRank(il::Array2D<T>{n0, n1});
+  tree_[s.index].SetFullRank(n0, n1);
 }
 
 template <typename T>
 void HMatrix<T>::SetLowRank(il::spot_t s, il::int_t n0, il::int_t n1,
                             il::int_t r) {
-  tree_[s.index].SetLowRank(il::Array2D<T>{n0, r}, il::Array2D<T>{n1, r});
+//  tree_[s.index].SetLowRank(il::Array2D<T>{n0, r}, il::Array2D<T>{n1, r});
+  tree_[s.index].SetLowRank(n0, n1, r);
+}
+
+template <typename T>
+void HMatrix<T>::ConvertToFullLu(il::spot_t s) {
+  return tree_[s.index].ConvertToFullLu();
 }
 
 template <typename T>
@@ -140,13 +172,33 @@ il::Array2DEdit<T> HMatrix<T>::AsLowRankB(il::spot_t s) {
 }
 
 template <typename T>
+il::ArrayView<int> HMatrix<T>::asFullLuPivot(il::spot_t s) const {
+  return tree_[s.index].asFullLuPivot().view();
+}
+
+template <typename T>
+il::ArrayEdit<int> HMatrix<T>::AsFullLuPivot(il::spot_t s) {
+  return tree_[s.index].AsFullLuPivot().Edit();
+}
+
+template <typename T>
+il::Array2DView<T> HMatrix<T>::asFullLu(il::spot_t s) const {
+  return tree_[s.index].asFullLu().view();
+}
+
+template <typename T>
+il::Array2DEdit<T> HMatrix<T>::AsFullLu(il::spot_t s) {
+  return tree_[s.index].AsFullLu().Edit();
+}
+
+template <typename T>
 bool HMatrix<T>::isBuilt() const {
   return isBuilt(root());
 }
 
 template <typename T>
 il::int_t HMatrix<T>::size(il::int_t d, il::spot_t s) const {
-  if (tree_[s.index].isFullRank() || tree_[s.index].isLowRank()) {
+  if (tree_[s.index].isFullRank() || tree_[s.index].isLowRank() || tree_[s.index].isFullLu()) {
     return tree_[s.index].size(d);
   } else if (tree_[s.index].isEmpty()) {
     IL_UNREACHABLE;

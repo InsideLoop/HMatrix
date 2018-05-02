@@ -1,11 +1,11 @@
 #pragma once
 
 #include <linearAlgebra/blas/dot.h>
-#include <luhmatrix/LuHMatrix.h>
+#include <hmatrix/HMatrix.h>
 
 namespace il {
 
-inline void blas_rec(double alpha, const il::LuHMatrix<double, int>& A,
+inline void blas_rec(double alpha, const il::HMatrix<double>& A,
                      il::spot_t s, il::MatrixType type, il::ArrayView<double> x,
                      double beta, il::io_t, il::ArrayEdit<double> y) {
   IL_EXPECT_FAST(A.size(0, s) == y.size());
@@ -59,7 +59,7 @@ inline void blas_rec(double alpha, const il::LuHMatrix<double, int>& A,
   }
 }
 
-inline void blas(double alpha, const il::LuHMatrix<double, int>& lu,
+inline void blas(double alpha, const il::HMatrix<double>& lu,
                  il::spot_t s, il::MatrixType type, il::ArrayView<double> x,
                  double beta, il::io_t, il::ArrayEdit<double> y) {
   IL_EXPECT_MEDIUM(lu.size(0, s) == y.size());
@@ -68,7 +68,7 @@ inline void blas(double alpha, const il::LuHMatrix<double, int>& lu,
   il::blas_rec(alpha, lu, s, type, x, beta, il::io, y);
 }
 
-inline void blas_rec(double alpha, const il::LuHMatrix<double, int>& A,
+inline void blas_rec(double alpha, const il::HMatrix<double>& A,
                      il::spot_t s, il::MatrixType type,
                      il::Array2DView<double> B, double beta, il::io_t,
                      il::Array2DEdit<double> C) {
@@ -126,7 +126,7 @@ inline void blas_rec(double alpha, const il::LuHMatrix<double, int>& A,
   }
 }
 
-inline void blas(double alpha, const il::LuHMatrix<double, int>& lu,
+inline void blas(double alpha, const il::HMatrix<double>& lu,
                  il::spot_t s, il::MatrixType type, il::Array2DView<double> A,
                  double beta, il::io_t, il::Array2DEdit<double> B) {
   IL_EXPECT_MEDIUM(lu.size(0, s) == B.size(0));

@@ -1,5 +1,5 @@
 #include <hmatrix/HMatrix.h>
-#include <luhmatrix/LuHMatrix.h>
+#include <hmatrix/HMatrix.h>
 #include <luhmatrix/solve.h>
 #include <luhmatrix/lu.h>
 
@@ -44,7 +44,7 @@ int main() {
   H10B(0, 0) = 1.0;
   H10B(1, 0) = 1.0;
 
-  il::LuHMatrix<double, int> LUH = il::lu(H);
+  il::HMatrix<double> LUH = il::lu(H);
 
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
   il::solve(LUH, LUH.root(), il::io, y.Edit());

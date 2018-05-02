@@ -18,27 +18,30 @@
 #include <il/linearAlgebra/Matrix.h>
 
 #include <hmatrix/HMatrix.h>
-#include <luhmatrix/LuHMatrix.h>
 
 namespace il {
 
-void solve(const il::LuHMatrix<double, int>& lu, il::spot_t s, il::io_t,
+void solve(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
            il::ArrayEdit<double> x);
 
-void solveLower(const il::LuHMatrix<double, int>& lu, il::spot_t s, il::io_t,
+void solveLower(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                 il::ArrayEdit<double> x);
-void solveLower(const il::LuHMatrix<double, int>& lu, il::spot_t s, il::io_t,
+void solveLower(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                 il::Array2DEdit<double> A);
-void solveLower(const il::LuHMatrix<double, int>& lu, il::spot_t slu,
-                il::spot_t s, il::io_t, il::LuHMatrix<double, int>& A);
+void solveLower(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
+                il::io_t, il::HMatrix<double>& A);
 
-void solveUpper(const il::LuHMatrix<double, int>& lu, il::spot_t s, il::io_t,
+void solveUpper(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                 il::ArrayEdit<double> x);
-void solveUpper(const il::LuHMatrix<double, int>& lu, il::spot_t s, il::io_t,
+void solveUpper(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                 il::Array2DEdit<double> A);
-void solveUpper(const il::LuHMatrix<double, int>& lu, il::spot_t slu,
-                il::spot_t s, il::io_t, il::LuHMatrix<double, int>& A);
+void solveUpper(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
+                il::io_t, il::HMatrix<double>& A);
 
+void solveUpperTranspose(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
+                         il::Array2DEdit<double> A);
+void solveUpperTranspose(const il::HMatrix<double>& lu, il::spot_t slu,
+                         il::spot_t s, il::io_t, il::HMatrix<double>& A);
 
 void solve(il::ArrayView<int> pivot, il::Array2DView<double> A,
            il::MatrixType type, il::io_t, il::ArrayEdit<double> x);
@@ -47,6 +50,8 @@ void solve(il::ArrayView<int> pivot, il::Array2DView<double> A,
 void solve(il::Array2DView<double> A, il::MatrixType type, il::io_t,
            il::ArrayEdit<double> x);
 void solve(il::Array2DView<double> A, il::MatrixType type, il::io_t,
+           il::Array2DEdit<double> B);
+void solve(il::Array2DView<double> A, il::MatrixType type, il::Dot op, il::io_t,
            il::Array2DEdit<double> B);
 
 }  // namespace il
