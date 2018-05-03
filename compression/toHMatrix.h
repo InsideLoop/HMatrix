@@ -4,7 +4,6 @@
 
 #include <hmatrix/HMatrix.h>
 #include <arrayFunctor/MatrixGenerator.h>
-#include <hmatrix/LowRank.h>
 #include <compression/adaptiveCrossApproximation.h>
 
 namespace il {

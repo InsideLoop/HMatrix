@@ -2,9 +2,9 @@
 
 #include <hmatrix/HMatrix.h>
 #include <hmatrix/HMatrix.h>
-#include <luhmatrix/lu.h>
-#include <luhmatrix/solve.h>
-#include <linearAlgebra/blas/dot.h>
+#include <linearAlgebra/blas/hsolve.h>
+#include <linearAlgebra/blas/hdot.h>
+#include <linearAlgebra/factorization/luDecomposition.h>
 
 TEST(solve, test0) {
   il::HMatrix<double> H{};

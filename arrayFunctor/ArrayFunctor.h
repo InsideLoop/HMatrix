@@ -3,7 +3,7 @@
 #include <il/ArrayView.h>
 
 #include <hmatrix/HMatrix.h>
-#include <linearAlgebra/blas/dot.h>
+#include <linearAlgebra/blas/hdot.h>
 
 namespace il {
 

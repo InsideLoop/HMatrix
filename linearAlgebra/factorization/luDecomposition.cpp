@@ -1,8 +1,10 @@
-#include <luhmatrix/lu.h>
 
 #include <il/blas.h>
-#include <luhmatrix/solve.h>
-#include <luhmatrix/hblas.h>
+#include <il/linearAlgebra/dense/factorization/luDecomposition.h>
+#include <il/linearAlgebra/dense/blas/solve.h>
+#include <linearAlgebra/blas/hsolve.h>
+#include <linearAlgebra/blas/hblas.h>
+#include <linearAlgebra/factorization/luDecomposition.h>
 
 #ifdef IL_MKL
 #include <mkl_cblas.h>
@@ -35,7 +37,7 @@ void lu(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
     il::Array2DEdit<double> lu = LU.AsFullLu(slu);
     il::ArrayEdit<int> pivot = LU.AsFullLuPivot(slu);
     il::copy(F, il::io, lu);
-    il::luForFull(il::io, lu, pivot);
+    il::luDecomposition(il::io, pivot, lu);
   } else if (H.isHierarchical(sh)) {
     const il::spot_t sh00 = H.child(sh, 0, 0);
     const il::spot_t sh10 = H.child(sh, 1, 0);
@@ -52,20 +54,6 @@ void lu(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
     lowerLeft(H, sh, slu, il::io, LU);
     lowerRight(H, sh, slu, il::io, LU);
   }
-}
-
-void luForFull(il::io_t, il::Array2DEdit<double> A, il::ArrayEdit<int> pivot) {
-  IL_EXPECT_MEDIUM(A.size(0) == A.size(1));
-  IL_EXPECT_MEDIUM(A.size(0) == pivot.size());
-
-  const int layout = LAPACK_COL_MAJOR;
-  const lapack_int m = static_cast<lapack_int>(A.size(0));
-  const lapack_int n = static_cast<lapack_int>(A.size(1));
-  const lapack_int lda = static_cast<lapack_int>(A.stride(1));
-  const lapack_int lapack_error =
-      LAPACKE_dgetrf(layout, m, n, A.Data(), lda, pivot.Data());
-
-  IL_EXPECT_FAST(lapack_error == 0);
 }
 
 void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
@@ -91,32 +79,8 @@ void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
       il::Array2DEdit<double> LUB = LU.AsLowRankB(slu01);
       il::copy(B, il::io, LUB);
       il::copy(A, il::io, LUA);
-      {
-        const int layout = LAPACK_COL_MAJOR;
-        const lapack_int n = static_cast<lapack_int>(LUA.size(1));
-        const lapack_int lda = static_cast<lapack_int>(LUA.stride(1));
-        const lapack_int k1 = 1;
-        const lapack_int k2 = PLU00.size();
-        const lapack_int incx = 1;
-        const lapack_int lapack_error = LAPACKE_dlaswp(
-            layout, n, LUA.Data(), lda, k1, k2, PLU00.data(), incx);
-        IL_EXPECT_MEDIUM(lapack_error == 0);
-      }
-
-      {
-        const IL_CBLAS_LAYOUT layout = CblasColMajor;
-        const CBLAS_SIDE side = CblasLeft;
-        const CBLAS_UPLO uplo = CblasLower;
-        const CBLAS_TRANSPOSE transa = CblasNoTrans;
-        const CBLAS_DIAG diag = CblasUnit;
-        const MKL_INT m = static_cast<MKL_INT>(LUA.size(0));
-        const MKL_INT n = static_cast<MKL_INT>(LUA.size(1));
-        const double alpha = 1.0;
-        const MKL_INT lda = static_cast<MKL_INT>(LLU00.stride(1));
-        const MKL_INT ldb = static_cast<MKL_INT>(LUA.stride(1));
-        cblas_dtrsm(layout, side, uplo, transa, diag, m, n, alpha, LLU00.data(),
-                    lda, LUA.Data(), ldb);
-      }
+      il::solve(PLU00, il::io, LUA);
+      il::solve(LLU00, il::MatrixType::LowerUnit, il::io, LUA);
     } else {
       IL_UNREACHABLE;
     }
@@ -205,7 +169,7 @@ void lowerRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
                tmp2.Edit());
       il::blas(1.0, LA, tmp2.view(), 0.0, il::io, A);
       il::blas(1.0, FH, -1.0, il::io, A);
-      il::luForFull(il::io, A, pivot);
+      il::luDecomposition(il::io, pivot, A);
     } else {
       IL_UNREACHABLE;
     }

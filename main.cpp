@@ -1,7 +1,7 @@
 #include <hmatrix/HMatrix.h>
 #include <hmatrix/HMatrix.h>
-#include <luhmatrix/solve.h>
-#include <luhmatrix/lu.h>
+#include <linearAlgebra/blas/hsolve.h>
+#include <linearAlgebra/factorization/luDecomposition.h>
 
 #include <iostream>
 
