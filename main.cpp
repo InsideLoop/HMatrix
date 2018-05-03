@@ -44,10 +44,10 @@ int main() {
   H10B(0, 0) = 1.0;
   H10B(1, 0) = 1.0;
 
-  il::HMatrix<double> LUH = il::lu(H);
+  il::luDecomposition(il::io, H);
 
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
-  il::solve(LUH, LUH.root(), il::io, y.Edit());
+  il::solve(H, H.root(), il::io, y.Edit());
 
   return 0;
 }

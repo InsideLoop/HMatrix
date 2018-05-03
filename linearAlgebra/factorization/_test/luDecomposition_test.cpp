@@ -45,10 +45,10 @@ TEST(solve, test0) {
   H10B(0, 0) = 1.0;
   H10B(1, 0) = 1.0;
 
-  il::HMatrix<double> LUH = il::lu(H);
+  il::luDecomposition(il::io, H);
 
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
-  il::solve(LUH, LUH.root(), il::io, y.Edit());
+  il::solve(H, H.root(), il::io, y.Edit());
 
   const double eps = 1.0e-10;
 
@@ -95,10 +95,10 @@ TEST(solve, test1) {
   H10B(0, 0) = 1.0;
   H10B(1, 0) = 1.0;
 
-  il::HMatrix<double> LUH = il::lu(H);
+  il::luDecomposition(il::io, H);
 
   il::Array<double> y = {il::value, {14.0, 8.0, 25.5, 22.0}};
-  il::solve(LUH, LUH.root(), il::io, y.Edit());
+  il::solve(H, H.root(), il::io, y.Edit());
 
   const double eps = 1.0e-14;
 
@@ -211,11 +211,12 @@ TEST(solve, test2) {
     H10B(1, 0) = 1.0;
   }
 
-  il::HMatrix<double> LUH = il::lu(H);
-
   il::Array<double> x_initial{H.size(1), 1.0};
   il::Array<double> y = il::dot(H, x_initial);
-  il::solve(LUH, LUH.root(), il::io, y.Edit());
+
+  il::luDecomposition(il::io, H);
+
+  il::solve(H, H.root(), il::io, y.Edit());
 
   bool result = true;
   const double eps = 1.0e-14;
@@ -333,14 +334,15 @@ TEST(solve, test3) {
     H10B(1, 0) = 1.0 / 44;
   }
 
-  il::HMatrix<double> LUH = il::lu(H);
-
   il::Array<double> x_initial{H.size(1)};
   for (il::int_t i = 0; i < x_initial.size(); ++i) {
     x_initial[i] = static_cast<double>(1 + i);
   }
   il::Array<double> y = il::dot(H, x_initial);
-  il::solve(LUH, LUH.root(), il::io, y.Edit());
+
+  il::luDecomposition(il::io, H);
+
+  il::solve(H, H.root(), il::io, y.Edit());
 
   bool result = true;
   const double eps = 1.0e-14;

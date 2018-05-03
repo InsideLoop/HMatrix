@@ -1,9 +1,9 @@
 
 #include <il/blas.h>
-#include <il/linearAlgebra/dense/factorization/luDecomposition.h>
 #include <il/linearAlgebra/dense/blas/solve.h>
-#include <linearAlgebra/blas/hsolve.h>
+#include <il/linearAlgebra/dense/factorization/luDecomposition.h>
 #include <linearAlgebra/blas/hblas.h>
+#include <linearAlgebra/blas/hsolve.h>
 #include <linearAlgebra/factorization/luDecomposition.h>
 
 #ifdef IL_MKL
@@ -20,102 +20,61 @@
 
 namespace il {
 
-il::HMatrix<double> lu(const il::HMatrix<double>& H) {
-  il::HMatrix<double> LU{};
-  il::spot_t sh = H.root();
-  il::spot_t slu = LU.root();
-  lu(H, sh, slu, il::io, LU);
-  return LU;
-};
-
-void lu(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
-        il::HMatrix<double>& LU) {
-  if (H.isFullRank(sh)) {
-    il::Array2DView<double> F = H.asFullRank(sh);
-    LU.SetFullRank(slu, F.size(0), F.size(1));
-    LU.ConvertToFullLu(slu);
-    il::Array2DEdit<double> lu = LU.AsFullLu(slu);
-    il::ArrayEdit<int> pivot = LU.AsFullLuPivot(slu);
-    il::copy(F, il::io, lu);
+void luDecomposition(il::io_t, il::HMatrix<double>& H) {
+  luDecomposition(H.root(), il::io, H);
+}
+void luDecomposition(il::spot_t s, il::io_t, il::HMatrix<double>& H) {
+  if (H.isFullRank(s)) {
+    H.ConvertToFullLu(s);
+    il::ArrayEdit<int> pivot = H.AsFullLuPivot(s);
+    il::Array2DEdit<double> lu = H.AsFullLu(s);
     il::luDecomposition(il::io, pivot, lu);
-  } else if (H.isHierarchical(sh)) {
-    const il::spot_t sh00 = H.child(sh, 0, 0);
-    const il::spot_t sh10 = H.child(sh, 1, 0);
-    const il::spot_t sh01 = H.child(sh, 0, 1);
-    const il::spot_t sh11 = H.child(sh, 1, 1);
-
-    LU.SetHierarchical(slu);
-    const il::spot_t slu00 = LU.child(slu, 0, 0);
-    const il::spot_t slu10 = LU.child(slu, 1, 0);
-    const il::spot_t slu01 = LU.child(slu, 0, 1);
-    const il::spot_t slu11 = LU.child(slu, 1, 1);
-    lu(H, sh00, slu00, il::io, LU);
-    upperRight(H, sh, slu, il::io, LU);
-    lowerLeft(H, sh, slu, il::io, LU);
-    lowerRight(H, sh, slu, il::io, LU);
+  } else if (H.isHierarchical(s)) {
+    const il::spot_t s00 = H.child(s, 0, 0);
+    luDecomposition(s00, il::io, H);
+    upperRight(s, il::io, H);
+    lowerLeft(s, il::io, H);
+    lowerRight(s, il::io, H);
   }
 }
 
-void upperRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
-                il::io_t, il::HMatrix<double>& LU) {
-  const il::spot_t sh00 = H.child(sh, 0, 0);
-  const il::spot_t sh01 = H.child(sh, 0, 1);
-  if (H.isFullRank(sh00) || H.isFullLu(sh00)) {
-    const il::spot_t slu00 = LU.child(slu, 0, 0);
-    const il::spot_t slu01 = LU.child(slu, 0, 1);
-    IL_EXPECT_MEDIUM(LU.isFullLu(slu00))
-    il::ArrayView<int> PLU00 = LU.asFullLuPivot(slu00);
-    il::Array2DView<double> LLU00 = LU.asFullLu(slu00);
-    if (H.isLowRank(sh01)) {
+void upperRight(il::spot_t s, il::io_t, il::HMatrix<double>& H) {
+  const il::spot_t s00 = H.child(s, 0, 0);
+  const il::spot_t s01 = H.child(s, 0, 1);
+  if (H.isFullLu(s00)) {
+    il::ArrayView<int> PLU00 = H.asFullLuPivot(s00);
+    il::Array2DView<double> LLU00 = H.asFullLu(s00);
+    if (H.isLowRank(s01)) {
       // We need to solve P.L.U = A.B^T. The solution is
       // U = (L^{-1}.P^{-1}.A).B^T . So B is just copied, and for the new A,
       // all we need is to swap the rows (apply P^{-1}) and then solve the
       // lower triangular system.
-      il::Array2DView<double> A = H.asLowRankA(sh01);
-      il::Array2DView<double> B = H.asLowRankB(sh01);
-      IL_EXPECT_MEDIUM(A.size(1) == B.size(1))
-      LU.SetLowRank(slu01, A.size(0), B.size(0), A.size(1));
-      il::Array2DEdit<double> LUA = LU.AsLowRankA(slu01);
-      il::Array2DEdit<double> LUB = LU.AsLowRankB(slu01);
-      il::copy(B, il::io, LUB);
-      il::copy(A, il::io, LUA);
+      il::Array2DEdit<double> LUA = H.AsLowRankA(s01);
+      il::Array2DEdit<double> LUB = H.AsLowRankB(s01);
       il::solve(PLU00, il::io, LUA);
       il::solve(LLU00, il::MatrixType::LowerUnit, il::io, LUA);
     } else {
       IL_UNREACHABLE;
     }
-  } else if (H.isHierarchical(sh00)) {
-    const il::spot_t slu01 = LU.child(slu, 0, 1);
-    il::copy(H, sh01, slu01, il::io, LU);
-    const il::spot_t slu00 = LU.child(slu, 0, 0);
-    il::solveLower(LU, sh00, slu01, il::io, LU);
+  } else if (H.isHierarchical(s00)) {
+    const il::spot_t s00 = H.child(s, 0, 0);
+    il::solveLower(H, s00, s01, il::io, H);
   } else {
-    IL_EXPECT_MEDIUM(H.isLowRank(sh00));
+    IL_EXPECT_MEDIUM(H.isLowRank(s00));
     IL_UNREACHABLE;
   }
 }
 
-void lowerLeft(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
-               il::io_t, il::HMatrix<double>& LU) {
-  const il::spot_t sh00 = H.child(sh, 0, 0);
-  const il::spot_t sh10 = H.child(sh, 1, 0);
-  if (H.isFullRank(sh00) || H.isFullLu(sh00)) {
-    const il::spot_t sh10 = H.child(sh, 1, 0);
-    const il::spot_t slu00 = LU.child(slu, 0, 0);
-    const il::spot_t slu10 = LU.child(slu, 1, 0);
-    IL_EXPECT_MEDIUM(LU.isFullLu(slu00))
-    il::Array2DView<double> ULU00 = LU.asFullLu(slu00);
-    if (H.isLowRank(sh10)) {
+void lowerLeft(il::spot_t s, il::io_t, il::HMatrix<double>& H) {
+  const il::spot_t s00 = H.child(s, 0, 0);
+  const il::spot_t s10 = H.child(s, 1, 0);
+  if (H.isFullLu(s00)) {
+    il::Array2DView<double> ULU00 = H.asFullLu(s00);
+    if (H.isLowRank(s10)) {
       // We need to solve L.U = A.B^{T}. The solution is L = A.B^{T}.U^{-1}
       // which is L = A.((U^T)^{-1}.B)^T
-      il::Array2DView<double> A = H.asLowRankA(sh10);
-      il::Array2DView<double> B = H.asLowRankB(sh10);
-      IL_EXPECT_MEDIUM(A.size(1) == B.size(1))
-      LU.SetLowRank(slu10, A.size(0), B.size(0), A.size(1));
-      il::Array2DEdit<double> LUA = LU.AsLowRankA(slu10);
-      il::Array2DEdit<double> LUB = LU.AsLowRankB(slu10);
-      il::copy(B, il::io, LUB);
-      il::copy(A, il::io, LUA);
+      il::Array2DEdit<double> LUA = H.AsLowRankA(s10);
+      il::Array2DEdit<double> LUB = H.AsLowRankB(s10);
       const IL_CBLAS_LAYOUT layout = CblasColMajor;
       const CBLAS_SIDE side = CblasLeft;
       const CBLAS_UPLO uplo = CblasUpper;
@@ -131,87 +90,77 @@ void lowerLeft(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
     } else {
       IL_UNREACHABLE;
     }
-  } else if (H.isHierarchical(sh00)) {
-    const il::spot_t slu10 = LU.child(slu, 1, 0);
-    il::copy(H, sh10, slu10, il::io, LU);
-    const il::spot_t slu00 = LU.child(slu, 0, 0);
-    il::solveUpperTranspose(LU, sh00, slu10, il::io, LU);
+  } else if (H.isHierarchical(s00)) {
+    il::solveUpperTranspose(H, s00, s10, il::io, H);
   } else {
     IL_UNREACHABLE;
   }
 }
 
-void lowerRight(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu,
-                il::io_t, il::HMatrix<double>& LU) {
-  const il::spot_t sh00 = H.child(sh, 0, 0);
-  if (H.isFullRank(sh00)) {
-    const il::spot_t sh11 = H.child(sh, 1, 1);
-    const il::spot_t slu01 = LU.child(slu, 0, 1);
-    const il::spot_t slu10 = LU.child(slu, 1, 0);
-    const il::spot_t slu11 = LU.child(slu, 1, 1);
-    IL_EXPECT_MEDIUM(LU.isLowRank(slu01) && LU.isLowRank(slu10));
-    if (H.isFullRank(sh11)) {
+void lowerRight(il::spot_t s, il::io_t, il::HMatrix<double>& H) {
+  const il::spot_t s00 = H.child(s, 0, 0);
+  if (H.isFullLu(s00)) {
+    const il::spot_t s11 = H.child(s, 1, 1);
+    const il::spot_t s01 = H.child(s, 0, 1);
+    const il::spot_t s10 = H.child(s, 1, 0);
+    IL_EXPECT_MEDIUM(H.isLowRank(s01) && H.isLowRank(s10));
+    if (H.isFullRank(s11)) {
       // We need to solve P.L.U = H - L.U
-      il::Array2DView<double> FH = H.asFullRank(sh11);
-      IL_EXPECT_MEDIUM(FH.size(0) == FH.size(1));
-      LU.SetFullRank(slu11, FH.size(0), FH.size(1));
-      LU.ConvertToFullLu(slu11);
-      il::Array2DEdit<double> A = LU.AsFullLu(slu11);
-      il::ArrayEdit<int> pivot = LU.AsFullLuPivot(slu11);
-      il::Array2DView<double> LA = LU.asLowRankA(slu10);
-      il::Array2DView<double> LB = LU.asLowRankB(slu10);
-      il::Array2DView<double> UA = LU.asLowRankA(slu01);
-      il::Array2DView<double> UB = LU.asLowRankB(slu01);
+      il::Array2DEdit<double> A = H.AsFullRank(s11);
+      il::Array2DView<double> LA = H.asLowRankA(s10);
+      il::Array2DView<double> LB = H.asLowRankB(s10);
+      il::Array2DView<double> UA = H.asLowRankA(s01);
+      il::Array2DView<double> UB = H.asLowRankB(s01);
       il::Array2D<double> tmp{LB.size(1), UA.size(1)};
       il::blas(1.0, LB, il::Dot::Transpose, UA, 0.0, il::io, tmp.Edit());
       il::Array2D<double> tmp2{LB.size(1), UB.size(0)};
       il::blas(1.0, tmp.view(), UB, il::Dot::Transpose, 0.0, il::io,
                tmp2.Edit());
-      il::blas(1.0, LA, tmp2.view(), 0.0, il::io, A);
-      il::blas(1.0, FH, -1.0, il::io, A);
-      il::luDecomposition(il::io, pivot, A);
+      il::blas(-1.0, LA, tmp2.view(), 1.0, il::io, A);
+      H.ConvertToFullLu(s11);
+      il::ArrayEdit<int> pivot = H.AsFullLuPivot(s11);
+      il::Array2DEdit<double> Abis = H.AsFullLu(s11);
+      il::luDecomposition(il::io, pivot, Abis);
     } else {
       IL_UNREACHABLE;
     }
   } else {
-    const il::spot_t sh11 = H.child(sh, 1, 1);
-    const il::spot_t slu10 = LU.child(slu, 1, 0);
-    const il::spot_t slu01 = LU.child(slu, 0, 1);
-    const il::spot_t slu11 = LU.child(slu, 1, 1);
-    il::copy(H, sh11, slu11, il::io, LU);
-    il::blas(-1.0, LU, slu10, LU, slu01, 1.0, slu11, il::io, LU);
-    il::lu(LU, slu11, slu11, il::io, LU);
+    const il::spot_t s10 = H.child(s, 1, 0);
+    const il::spot_t s01 = H.child(s, 0, 1);
+    const il::spot_t s11 = H.child(s, 1, 1);
+    il::blas(-1.0, H, s10, H, s01, 1.0, s11, il::io, H);
+    il::luDecomposition(s11, il::io, H);
   }
 }
 
-void copy(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
-          il::HMatrix<double>& LU) {
-  if (H.isFullRank(sh)) {
-    il::Array2DView<double> a = H.asFullRank(sh);
-    LU.SetFullRank(slu, a.size(0), a.size(1));
-    il::copy(a, il::io, LU.AsFullRank(slu));
-  } else if (H.isLowRank(sh)) {
-    il::Array2DView<double> a = H.asLowRankA(sh);
-    il::Array2DView<double> b = H.asLowRankB(sh);
-    LU.SetLowRank(slu, a.size(0), b.size(0), a.size(1));
-    il::copy(a, il::io, LU.AsLowRankA(slu));
-    il::copy(b, il::io, LU.AsLowRankB(slu));
-  } else {
-    IL_EXPECT_MEDIUM(H.isHierarchical(sh));
-    LU.SetHierarchical(slu);
-    const il::spot_t sh00 = H.child(sh, 0, 0);
-    const il::spot_t slu00 = LU.child(slu, 0, 0);
-    il::copy(H, sh00, slu00, il::io, LU);
-    const il::spot_t sh01 = H.child(sh, 0, 1);
-    const il::spot_t slu01 = LU.child(slu, 0, 1);
-    il::copy(H, sh01, slu01, il::io, LU);
-    const il::spot_t sh10 = H.child(sh, 1, 0);
-    const il::spot_t slu10 = LU.child(slu, 1, 0);
-    il::copy(H, sh10, slu10, il::io, LU);
-    const il::spot_t sh11 = H.child(sh, 1, 1);
-    const il::spot_t slu11 = LU.child(slu, 1, 1);
-    il::copy(H, sh11, slu11, il::io, LU);
-  }
-}
+//void copy(const il::HMatrix<double>& H, il::spot_t sh, il::spot_t slu, il::io_t,
+//          il::HMatrix<double>& LU) {
+//  if (H.isFullRank(sh)) {
+//    il::Array2DView<double> a = H.asFullRank(sh);
+//    LU.SetFullRank(slu, a.size(0), a.size(1));
+//    il::copy(a, il::io, LU.AsFullRank(slu));
+//  } else if (H.isLowRank(sh)) {
+//    il::Array2DView<double> a = H.asLowRankA(sh);
+//    il::Array2DView<double> b = H.asLowRankB(sh);
+//    LU.SetLowRank(slu, a.size(0), b.size(0), a.size(1));
+//    il::copy(a, il::io, LU.AsLowRankA(slu));
+//    il::copy(b, il::io, LU.AsLowRankB(slu));
+//  } else {
+//    IL_EXPECT_MEDIUM(H.isHierarchical(sh));
+//    LU.SetHierarchical(slu);
+//    const il::spot_t sh00 = H.child(sh, 0, 0);
+//    const il::spot_t slu00 = LU.child(slu, 0, 0);
+//    il::copy(H, sh00, slu00, il::io, LU);
+//    const il::spot_t sh01 = H.child(sh, 0, 1);
+//    const il::spot_t slu01 = LU.child(slu, 0, 1);
+//    il::copy(H, sh01, slu01, il::io, LU);
+//    const il::spot_t sh10 = H.child(sh, 1, 0);
+//    const il::spot_t slu10 = LU.child(slu, 1, 0);
+//    il::copy(H, sh10, slu10, il::io, LU);
+//    const il::spot_t sh11 = H.child(sh, 1, 1);
+//    const il::spot_t slu11 = LU.child(slu, 1, 1);
+//    il::copy(H, sh11, slu11, il::io, LU);
+//  }
+//}
 
 }  // namespace il
