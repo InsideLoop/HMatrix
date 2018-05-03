@@ -48,7 +48,7 @@ TEST(solve, test0) {
   il::luDecomposition(il::io, H);
 
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
-  il::solve(H, H.root(), il::io, y.Edit());
+  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
   const double eps = 1.0e-10;
 
@@ -98,7 +98,7 @@ TEST(solve, test1) {
   il::luDecomposition(il::io, H);
 
   il::Array<double> y = {il::value, {14.0, 8.0, 25.5, 22.0}};
-  il::solve(H, H.root(), il::io, y.Edit());
+  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
   const double eps = 1.0e-14;
 
@@ -216,7 +216,7 @@ TEST(solve, test2) {
 
   il::luDecomposition(il::io, H);
 
-  il::solve(H, H.root(), il::io, y.Edit());
+  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
   bool result = true;
   const double eps = 1.0e-14;
@@ -342,7 +342,7 @@ TEST(solve, test3) {
 
   il::luDecomposition(il::io, H);
 
-  il::solve(H, H.root(), il::io, y.Edit());
+  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
   bool result = true;
   const double eps = 1.0e-14;

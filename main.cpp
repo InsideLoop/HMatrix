@@ -47,7 +47,7 @@ int main() {
   il::luDecomposition(il::io, H);
 
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
-  il::solve(H, H.root(), il::io, y.Edit());
+  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
   return 0;
 }
