@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <iostream>
+
 #include <il/Tree.h>
 #include <il/math.h>
 
@@ -363,9 +365,9 @@ TEST(solve, test3) {
 }
 
 TEST(solve, test4) {
-  const il::int_t n = 256;
+  const il::int_t n = 8192;
   const il::int_t dim = 2;
-  const il::int_t leaf_max_size = 2;
+  const il::int_t leaf_max_size = 256;
 
   const double radius = 1.0;
   il::Array2D<double> point{n, dim};
@@ -395,8 +397,10 @@ TEST(solve, test4) {
   //////////////////////////////////////////////////////////////////////////////
   // We build the H-Matrix
   //////////////////////////////////////////////////////////////////////////////
-  const double alpha = 100.0;
-  const il::Matrix M{point, alpha};
+  const double alpha = 10.0;
+  // Put mu / n, and the condition number should be mu
+  const double beta = 0.1 / n;
+  const il::Matrix M{point, alpha, beta};
   const double epsilon = 1.0;
   il::HMatrix<double> h = il::toHMatrix(M, hmatrix_tree, epsilon);
 
@@ -411,8 +415,13 @@ TEST(solve, test4) {
   //////////////////////////////////////////////////////////////////////////////
   const il::Array2D<double> full_h = il::toArray2D(h);
   il::Status status{};
+  il::Timer timer{};
+  timer.Start();
   const il::LU<il::Array2D<double>> full_lu_h{full_h, il::io, status};
+  timer.Stop();
   status.AbortOnError();
+
+  std::cout << "Time for full LU-decomposition: " << timer.time() << std::endl;
 
   const double norm_full_h = il::norm(full_h, il::Norm::L1);
   const double cn = full_lu_h.conditionNumber(il::Norm::L1, norm_full_h);
@@ -432,8 +441,13 @@ TEST(solve, test4) {
   // Let's play with it
   //////////////////////////////////////////////////////////////////////////////
 
+  timer.Reset();
+  timer.Start();
   il::luDecomposition(il::io, h);
+  timer.Stop();
   il::solve(h, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+
+  std::cout << "Time for HLU-decomposition: " << timer.time() << std::endl;
 
   double relative_error = 0.0;
   for (il::int_t i = 0; i < y.size(); ++i) {

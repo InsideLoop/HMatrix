@@ -1,7 +1,7 @@
+#include <il/linearAlgebra/Matrix.h>
+#include <il/linearAlgebra/dense/blas/solve.h>
 #include <linearAlgebra/blas/hblas.h>
 #include <linearAlgebra/blas/hsolve.h>
-#include <il/linearAlgebra/dense/blas/solve.h>
-#include <il/linearAlgebra/Matrix.h>
 
 namespace il {
 
@@ -80,13 +80,15 @@ void solveLower(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
     const il::int_t n0 = lu.size(0, slu00);
     const il::int_t n1 = lu.size(0, slu10);
     if (A.isFullRank(s)) {
+      // FIXME: Are we sure we really need this il::MatrixType::Regular
+      // parameter?
       il::Array2DEdit<double> full = A.AsFullRank(s);
       il::Array2DEdit<double> full0 =
           full.Edit(il::Range{0, n0}, il::Range{0, full.size(1)});
       il::Array2DEdit<double> full1 =
           full.Edit(il::Range{n0, n0 + n1}, il::Range{0, full.size(1)});
       il::solveLower(lu, slu00, il::io, full0);
-      il::blas(-1.0, lu, slu10, il::MatrixType::LowerUnit, full0, 1.0, il::io,
+      il::blas(-1.0, lu, slu10, il::MatrixType::Regular, full0, 1.0, il::io,
                full1);
       il::solveLower(lu, slu11, il::io, full1);
     } else if (A.isLowRank(s)) {
@@ -207,7 +209,7 @@ void solveUpper(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
   }
 }
 
-void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
+void solveUpperTranspose(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                          il::Array2DEdit<double> A) {
   IL_EXPECT_MEDIUM(lu.size(0, s) == lu.size(1, s));
   IL_EXPECT_MEDIUM(lu.size(0, s) == A.size(0));
@@ -226,8 +228,42 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
         A.Edit(il::Range{0, n0}, il::Range{0, A.size(1)});
     il::Array2DEdit<double> A1 =
         A.Edit(il::Range{n0, n0 + n1}, il::Range{0, A.size(1)});
-    solveUpperRight(lu, s00, il::io, A0);
+    il::solveUpperTranspose(lu, s00, il::io, A0);
     il::blas(-1.0, lu, s01, il::Dot::Transpose, A0, 1.0, il::io, A1);
+    il::solveUpperTranspose(lu, s11, il::io, A1);
+  } else {
+    IL_UNREACHABLE;
+    il::abort();
+  }
+}
+
+void solveUpperTranspose(const il::HMatrix<double>& lu, il::spot_t slu,
+                         il::spot_t s, il::io_t, il::HMatrix<double>& A) {
+  il::abort();
+}
+
+void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
+                     il::Array2DEdit<double> A) {
+  IL_EXPECT_MEDIUM(lu.size(0, s) == lu.size(1, s));
+  IL_EXPECT_MEDIUM(lu.size(0, s) == A.size(1));
+
+  if (lu.isFullLu(s)) {
+    // Validated
+    il::Array2DView<double> full_lu = lu.asFullLu(s);
+    il::solveRight(full_lu, il::MatrixType::UpperNonUnit, il::io, A);
+  } else if (lu.isHierarchical(s)) {
+    // Validated
+    const il::spot_t s00 = lu.child(s, 0, 0);
+    const il::spot_t s01 = lu.child(s, 0, 1);
+    const il::spot_t s11 = lu.child(s, 1, 1);
+    const il::int_t n0 = lu.size(0, s00);
+    const il::int_t n1 = lu.size(0, s11);
+    il::Array2DEdit<double> A0 =
+        A.Edit(il::Range{0, A.size(0)}, il::Range{0, n0});
+    il::Array2DEdit<double> A1 =
+        A.Edit(il::Range{0, A.size(0)}, il::Range{n0, n0 + n1});
+    solveUpperRight(lu, s00, il::io, A0);
+    il::blas(-1.0, A0, lu, s01, 1.0, il::io, A1);
     solveUpperRight(lu, s11, il::io, A1);
   } else {
     IL_UNREACHABLE;
@@ -236,25 +272,25 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
 }
 
 void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
-                         il::spot_t s, il::io_t, il::HMatrix<double>& A) {
+                     il::spot_t s, il::io_t, il::HMatrix<double>& A) {
   IL_EXPECT_MEDIUM(lu.size(0, slu) == lu.size(1, slu));
   IL_EXPECT_MEDIUM(lu.size(0, slu) == A.size(1, s));
 
   if (lu.isFullLu(slu)) {
     il::Array2DView<double> upper = lu.asFullLu(slu);
     if (A.isFullRank(s)) {
-      il::abort();
-      // There should be a bug here
+      //validated
       il::Array2DEdit<double> full = A.AsFullRank(s);
-      il::solve(upper, il::MatrixType::UpperNonUnit, il::Dot::Transpose, il::io,
-                full);
+      il::solveRight(upper, il::MatrixType::UpperNonUnit, il::io, full);
     } else if (A.isLowRank(s)) {
+      // Validated
       il::Array2DEdit<double> ab = A.AsLowRankB(s);
       il::solve(upper, il::MatrixType::UpperNonUnit, il::Dot::Transpose, il::io,
                 ab);
     } else {
       IL_EXPECT_MEDIUM(A.isHierarchical(s));
       IL_UNREACHABLE;
+      il::abort();
       // Not sure if this needs to be implemented
     }
   } else if (lu.isHierarchical(slu)) {
@@ -264,26 +300,29 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
     const il::int_t n0 = lu.size(0, slu00);
     const il::int_t n1 = lu.size(0, slu11);
     if (A.isFullRank(s)) {
+      // Validated
       il::Array2DEdit<double> full = A.AsFullRank(s);
       il::Array2DEdit<double> full0 =
-          full.Edit(il::Range{0, n0}, il::Range{0, full.size(1)});
+          full.Edit(il::Range{0, full.size(0)}, il::Range{0, n0});
       il::Array2DEdit<double> full1 =
-          full.Edit(il::Range{n0, n0 + n1}, il::Range{0, full.size(1)});
+          full.Edit(il::Range{0, full.size(0)}, il::Range{n0, n0 + n1});
 
       il::solveUpperRight(lu, slu00, il::io, full0);
-      il::blas(-1.0, lu, slu01, il::Dot::Transpose, full0, 1.0, il::io, full1);
+      il::blas(-1.0, full0, lu, slu01, 1.0, il::io, full1);
       il::solveUpperRight(lu, slu11, il::io, full1);
     } else if (A.isLowRank(s)) {
+      // Validated
       il::Array2DEdit<double> lowb = A.AsLowRankB(s);
       il::Array2DEdit<double> lowb0 =
           lowb.Edit(il::Range{0, n0}, il::Range{0, lowb.size(1)});
       il::Array2DEdit<double> lowb1 =
           lowb.Edit(il::Range{n0, n0 + n1}, il::Range{0, lowb.size(1)});
-      il::solveUpperRight(lu, slu00, il::io, lowb0);
+      il::solveUpperTranspose(lu, slu00, il::io, lowb0);
       il::blas(-1.0, lu, slu01, il::Dot::Transpose, lowb0, 1.0, il::io, lowb1);
-      il::solveUpperRight(lu, slu11, il::io, lowb1);
+      il::solveUpperTranspose(lu, slu11, il::io, lowb1);
     } else {
       IL_EXPECT_MEDIUM(A.isHierarchical(s));
+      // Validated
       const il::spot_t s00 = A.child(s, 0, 0);
       const il::spot_t s01 = A.child(s, 0, 1);
       const il::spot_t s10 = A.child(s, 1, 0);
@@ -300,7 +339,5 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
     il::abort();
   }
 }
-
-
 
 }  // namespace il

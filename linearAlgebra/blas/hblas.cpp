@@ -77,9 +77,23 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
       il::blas(1.0, aa, tmp0.view(), 0.0, il::io, tmp1.Edit());
       il::blasLowRank(alpha, tmp1.view(), bb, beta, sc, il::io, C);
     } else if (A.isFullRank(sa) && B.isLowRank(sb)) {
-      IL_UNREACHABLE;
+      // FIXME : The branching could be improved as we do exactly as if
+      // C were a Hierarchical matrix (copy and paste of the code)
+      il::Array2DView<double> a = A.asFullRank(sa);
+      il::Array2DView<double> ba = B.asLowRankA(sb);
+      il::Array2DView<double> bb = B.asLowRankB(sb);
+      il::Array2D<double> tmp{a.size(0), ba.size(1)};
+      il::blas(1.0, a, ba, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, tmp.view(), bb, beta, sc, il::io, C);
     } else if (A.isLowRank(sa) && B.isFullRank(sb)) {
-      IL_UNREACHABLE;
+      // FIXME : The branching could be improved as we do exactly as if
+      // C were a Hierarchical matrix (copy and paste of the code)
+      il::Array2DView<double> aa = A.asLowRankA(sa);
+      il::Array2DView<double> ab = A.asLowRankB(sa);
+      il::Array2DView<double> b = B.asFullRank(sb);
+      il::Array2D<double> tmp{b.size(1), ab.size(1)};
+      il::blas(1.0, b, il::Dot::Transpose, ab, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, aa, tmp.view(), beta, sc, il::io, C);
     } else if (A.isHierarchical(sa) && B.isLowRank(sb)) {
       // FIXME : The branching could be improved as we do exactly as if
       // C were a Hierarchical matrix (copy and paste of the code)
@@ -124,9 +138,19 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
       il::blas(alpha, A, A.child(sa, 1, 1), B, B.child(sb, 1, 1), 1.0,
                C.child(sc, 1, 1), il::io, C);
     } else if (A.isFullRank(sa) && B.isLowRank(sb)) {
-      IL_UNREACHABLE;
+      il::Array2DView<double> a = A.asFullRank(sa);
+      il::Array2DView<double> ba = B.asLowRankA(sb);
+      il::Array2DView<double> bb = B.asLowRankB(sb);
+      il::Array2D<double> tmp{a.size(0), ba.size(1)};
+      il::blas(1.0, a, ba, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, tmp.view(), bb, beta, sc, il::io, C);
     } else if (A.isLowRank(sa) && B.isFullRank(sb)) {
-      IL_UNREACHABLE;
+      il::Array2DView<double> aa = A.asLowRankA(sa);
+      il::Array2DView<double> ab = A.asLowRankB(sa);
+      il::Array2DView<double> b = B.asFullRank(sb);
+      il::Array2D<double> tmp{b.size(1), ab.size(1)};
+      il::blas(1.0, b, il::Dot::Transpose, ab, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, aa, tmp.view(), beta, sc, il::io, C);
     } else if (A.isLowRank(sa) && B.isLowRank(sb)) {
       il::Array2DView<double> aa = A.asLowRankA(sa);
       il::Array2DView<double> ab = A.asLowRankB(sa);
@@ -154,7 +178,16 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
     } else if (A.isFullRank(sa) && B.isHierarchical(sb)) {
       IL_UNREACHABLE;
     } else if (A.isFullRank(sa) && B.isFullRank(sb)) {
-      IL_UNREACHABLE;
+      // FIXME: For the time being we don't do any recompression technique
+      il::Array2DView<double> a = A.asFullRank(sa);
+      il::Array2DView<double> b = A.asFullRank(sb);
+      il::Array2D<double> tmp0{a.size(0), b.size(1)};
+      il::blas(1.0, a, b, 0.0, il::io, tmp0.Edit());
+      il::Array2D<double> tmp1{tmp0.size(1), tmp0.size(1), 0.0};
+      for (il::int_t i = 0; i < tmp1.size(0); ++i) {
+        tmp1(i, i) = 1.0;
+      }
+      il::blasLowRank(alpha, tmp0.view(), tmp1.view(), beta, sc, il::io, C);
     }
   }
 }

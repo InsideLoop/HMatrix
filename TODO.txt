@@ -1,0 +1,2 @@
+- Handle the case where the low rank matrix is 0. This make the
+  factorization A.B^T with A and B both having 0 columns

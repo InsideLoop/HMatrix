@@ -8,9 +8,10 @@ class Matrix : public MatrixGenerator<double> {
  private:
   il::Array2D<double> point_;
   double alpha_;
+  double beta_;
 
  public:
-  Matrix(const il::Array2D<double>& point, double alpha);
+  Matrix(const il::Array2D<double>& point, double alpha, double beta);
   il::int_t size(il::int_t d) const override;
   il::int_t blockSize() const override;
   il::int_t sizeAsBlocks(il::int_t d) const override;
@@ -18,8 +19,9 @@ class Matrix : public MatrixGenerator<double> {
            il::Array2DEdit<double> M) const override;
 };
 
-inline Matrix::Matrix(const il::Array2D<double>& point, double alpha)
-    : point_{point}, alpha_{alpha} {
+inline Matrix::Matrix(const il::Array2D<double>& point, double alpha,
+                      double beta)
+    : point_{point}, alpha_{alpha}, beta_{beta} {
   IL_EXPECT_FAST(point_.size(1) == 2);
 };
 
@@ -38,7 +40,7 @@ inline il::int_t Matrix::sizeAsBlocks(il::int_t d) const {
 }
 
 inline void Matrix::set(il::int_t b0, il::int_t b1, il::io_t,
-                 il::Array2DEdit<double> M) const {
+                        il::Array2DEdit<double> M) const {
   IL_EXPECT_MEDIUM(M.size(0) % blockSize() == 0);
   IL_EXPECT_MEDIUM(M.size(1) % blockSize() == 0);
   IL_EXPECT_MEDIUM(b0 + M.size(0) / blockSize() <= point_.size(0));
@@ -50,7 +52,11 @@ inline void Matrix::set(il::int_t b0, il::int_t b1, il::io_t,
       il::int_t k1 = b1 + j1;
       const double dx = point_(k0, 0) - point_(k1, 0);
       const double dy = point_(k0, 1) - point_(k1, 1);
-      M(j0, j1) = std::exp(-alpha_ * (dx * dx + dy * dy));
+      if (k0 != k1) {
+        M(j0, j1) = beta_ * std::exp(-alpha_ * (dx * dx + dy * dy));
+      } else {
+        M(j0, j1) = 1.0;
+      }
     }
   }
 }
