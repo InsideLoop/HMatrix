@@ -23,7 +23,6 @@ namespace il {
 
 void solve(const il::HMatrix<double>& lu, il::MatrixType type, il::io_t,
            il::ArrayEdit<double> xy);
-
 void solve(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
            il::ArrayEdit<double> x);
 

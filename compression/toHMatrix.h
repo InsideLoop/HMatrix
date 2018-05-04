@@ -65,7 +65,7 @@ void hmatrix_rec(const il::MatrixGenerator<double>& matrix,
   }
 }
 
-il::HMatrix<double> toHMatrix(const il::MatrixGenerator<double>& matrix,
+inline il::HMatrix<double> toHMatrix(const il::MatrixGenerator<double>& matrix,
                               const il::Tree<il::SubHMatrix, 4>& tree,
                               double epsilon) {
   il::HMatrix<double> ans{};

@@ -56,8 +56,6 @@ void solveLower(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
 
 void solveLower(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
                 il::io_t, il::HMatrix<double>& A) {
-  const il::int_t debug_n0 = lu.size(0, slu);
-  const il::int_t debug_n1 = lu.size(1, slu);
   IL_EXPECT_MEDIUM(lu.size(0, slu) == lu.size(1, slu));
   IL_EXPECT_MEDIUM(lu.size(1, slu) == A.size(0, s));
 
@@ -72,42 +70,50 @@ void solveLower(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
       il::solve(pivot, lower, il::MatrixType::LowerUnit, il::io, full);
     } else {
       IL_EXPECT_MEDIUM(A.isHierarchical(s));
-      IL_UNREACHABLE;
+      il::abort();
       // Not sure if this needs to be implemented
     }
   } else if (lu.isHierarchical(slu)) {
-    const il::spot_t s00 = lu.child(slu, 0, 0);
-    const il::spot_t s10 = lu.child(slu, 1, 0);
-    const il::spot_t s11 = lu.child(slu, 1, 1);
-    const il::int_t n0 = lu.size(0, s00);
-    const il::int_t n1 = lu.size(0, s10);
+    const il::spot_t slu00 = lu.child(slu, 0, 0);
+    const il::spot_t slu10 = lu.child(slu, 1, 0);
+    const il::spot_t slu11 = lu.child(slu, 1, 1);
+    const il::int_t n0 = lu.size(0, slu00);
+    const il::int_t n1 = lu.size(0, slu10);
     if (A.isFullRank(s)) {
       il::Array2DEdit<double> full = A.AsFullRank(s);
       il::Array2DEdit<double> full0 =
           full.Edit(il::Range{0, n0}, il::Range{0, full.size(1)});
       il::Array2DEdit<double> full1 =
           full.Edit(il::Range{n0, n0 + n1}, il::Range{0, full.size(1)});
-      il::solveLower(lu, s00, il::io, full0);
-      il::blas(-1.0, lu, s10, il::MatrixType::LowerUnit, full0, 1.0, il::io,
+      il::solveLower(lu, slu00, il::io, full0);
+      il::blas(-1.0, lu, slu10, il::MatrixType::LowerUnit, full0, 1.0, il::io,
                full1);
-      il::solveLower(lu, s11, il::io, full1);
+      il::solveLower(lu, slu11, il::io, full1);
     } else if (A.isLowRank(s)) {
       il::Array2DEdit<double> lowA = A.AsLowRankA(s);
       il::Array2DEdit<double> lowA0 =
           lowA.Edit(il::Range{0, n0}, il::Range{0, lowA.size(1)});
       il::Array2DEdit<double> lowA1 =
           lowA.Edit(il::Range{n0, n0 + n1}, il::Range{0, lowA.size(1)});
-      il::solveLower(lu, s00, il::io, lowA0);
-      il::blas(-1.0, lu, s10, il::MatrixType::Regular, lowA0, 1.0, il::io,
+      il::solveLower(lu, slu00, il::io, lowA0);
+      il::blas(-1.0, lu, slu10, il::MatrixType::Regular, lowA0, 1.0, il::io,
                lowA1);
-      il::solveLower(lu, s11, il::io, lowA1);
+      il::solveLower(lu, slu11, il::io, lowA1);
     } else {
-      IL_EXPECT_MEDIUM(A.isHierarchical(s));
-      IL_UNREACHABLE;
-      // Not sure if this needs to be implemented
+      const il::spot_t s00 = A.child(s, 0, 0);
+      const il::spot_t s01 = A.child(s, 0, 1);
+      const il::spot_t s10 = A.child(s, 1, 0);
+      const il::spot_t s11 = A.child(s, 1, 1);
+      il::solveLower(lu, slu00, s00, il::io, A);
+      il::solveLower(lu, slu00, s01, il::io, A);
+      il::blas(-1.0, lu, slu10, A, s00, 1.0, s10, il::io, A);
+      il::blas(-1.0, lu, slu10, A, s01, 1.0, s11, il::io, A);
+      il::solveLower(lu, slu11, s10, il::io, A);
+      il::solveLower(lu, slu11, s11, il::io, A);
     }
   } else {
     IL_UNREACHABLE;
+    il::abort();
   }
 }
 
@@ -140,6 +146,7 @@ void solveUpper(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                A.Edit(il::Range{0, n0}, il::Range{0, A.size(1)}));
   } else {
     IL_UNREACHABLE;
+    il::abort();
   }
 }
 
@@ -193,6 +200,7 @@ void solveUpper(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
       IL_EXPECT_MEDIUM(A.isHierarchical(s));
       IL_UNREACHABLE;
       // Not sure if this needs to be implemented
+      il::abort();
     }
   } else {
     IL_UNREACHABLE;
@@ -223,13 +231,14 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
     solveUpperRight(lu, s11, il::io, A1);
   } else {
     IL_UNREACHABLE;
+    il::abort();
   }
 }
 
 void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
                          il::spot_t s, il::io_t, il::HMatrix<double>& A) {
   IL_EXPECT_MEDIUM(lu.size(0, slu) == lu.size(1, slu));
-  IL_EXPECT_MEDIUM(lu.size(0, slu) == A.size(0, s));
+  IL_EXPECT_MEDIUM(lu.size(0, slu) == A.size(1, s));
 
   if (lu.isFullLu(slu)) {
     il::Array2DView<double> upper = lu.asFullLu(slu);
@@ -249,11 +258,11 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
       // Not sure if this needs to be implemented
     }
   } else if (lu.isHierarchical(slu)) {
-    const il::spot_t s00 = lu.child(slu, 0, 0);
-    const il::spot_t s01 = lu.child(slu, 0, 1);
-    const il::spot_t s11 = lu.child(slu, 1, 1);
-    const il::int_t n0 = lu.size(0, s00);
-    const il::int_t n1 = lu.size(0, s11);
+    const il::spot_t slu00 = lu.child(slu, 0, 0);
+    const il::spot_t slu01 = lu.child(slu, 0, 1);
+    const il::spot_t slu11 = lu.child(slu, 1, 1);
+    const il::int_t n0 = lu.size(0, slu00);
+    const il::int_t n1 = lu.size(0, slu11);
     if (A.isFullRank(s)) {
       il::Array2DEdit<double> full = A.AsFullRank(s);
       il::Array2DEdit<double> full0 =
@@ -261,25 +270,34 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
       il::Array2DEdit<double> full1 =
           full.Edit(il::Range{n0, n0 + n1}, il::Range{0, full.size(1)});
 
-      il::solveUpperRight(lu, s00, il::io, full0);
-      il::blas(-1.0, lu, s01, il::Dot::Transpose, full0, 1.0, il::io, full1);
-      il::solveUpperRight(lu, s11, il::io, full1);
+      il::solveUpperRight(lu, slu00, il::io, full0);
+      il::blas(-1.0, lu, slu01, il::Dot::Transpose, full0, 1.0, il::io, full1);
+      il::solveUpperRight(lu, slu11, il::io, full1);
     } else if (A.isLowRank(s)) {
       il::Array2DEdit<double> lowb = A.AsLowRankB(s);
       il::Array2DEdit<double> lowb0 =
           lowb.Edit(il::Range{0, n0}, il::Range{0, lowb.size(1)});
       il::Array2DEdit<double> lowb1 =
           lowb.Edit(il::Range{n0, n0 + n1}, il::Range{0, lowb.size(1)});
-      il::solveUpperRight(lu, s00, il::io, lowb0);
-      il::blas(-1.0, lu, s01, il::Dot::Transpose, lowb0, 1.0, il::io, lowb1);
-      il::solveUpperRight(lu, s11, il::io, lowb1);
+      il::solveUpperRight(lu, slu00, il::io, lowb0);
+      il::blas(-1.0, lu, slu01, il::Dot::Transpose, lowb0, 1.0, il::io, lowb1);
+      il::solveUpperRight(lu, slu11, il::io, lowb1);
     } else {
       IL_EXPECT_MEDIUM(A.isHierarchical(s));
-      IL_UNREACHABLE;
-      // Not sure if this needs to be implemented
+      const il::spot_t s00 = A.child(s, 0, 0);
+      const il::spot_t s01 = A.child(s, 0, 1);
+      const il::spot_t s10 = A.child(s, 1, 0);
+      const il::spot_t s11 = A.child(s, 1, 1);
+      il::solveUpperRight(lu, slu00, s00, il::io, A);
+      il::solveUpperRight(lu, slu00, s10, il::io, A);
+      il::blas(-1.0, A, s00, lu, slu01, 1.0, s01, il::io, A);
+      il::blas(-1.0, A, s10, lu, slu01, 1.0, s11, il::io, A);
+      il::solveUpperRight(lu, slu11, s01, il::io, A);
+      il::solveUpperRight(lu, slu11, s11, il::io, A);
     }
   } else {
     IL_UNREACHABLE;
+    il::abort();
   }
 }
 

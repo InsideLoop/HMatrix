@@ -26,8 +26,8 @@ void cluster_rec(il::spot_t s, il::int_t leaf_size, il::io_t,
                  il::Array<il::int_t>& permutation);
 
 il::Tree<il::SubHMatrix, 4> hmatrixTree(const il::Array2D<double>& node,
-                                       const il::Tree<il::Range, 2>& tree,
-                                       double eta);
+                                        const il::Tree<il::Range, 2>& tree,
+                                        double eta);
 
 void hmatrixTree_rec(const il::Array2D<double>& node,
                      const il::Tree<il::Range, 2>& range_tree, double eta,
@@ -74,11 +74,15 @@ inline double diameter(const il::Array2D<double>& node, il::Range range) {
 
 inline bool isAdmissible(const il::Array2D<double>& node, double eta,
                          il::Range range_0, il::Range range_1) {
-  const double diam_0 = diameter(node, range_0);
-  const double diam_1 = diameter(node, range_1);
-  const double dist = distance(node, range_0, range_1);
+  if (range_0.begin == range_1.begin && range_0.end == range_1.end) {
+    return false;
+  } else {
+    const double diam_0 = diameter(node, range_0);
+    const double diam_1 = diameter(node, range_1);
+    const double dist = distance(node, range_0, range_1);
 
-  return il::max(diam_0, diam_1) <= eta * dist;
+    return il::max(diam_0, diam_1) <= eta * dist;
+  }
 }
 
 // k: is the node number. The tree is numbered as
@@ -208,7 +212,7 @@ struct Clustering {
 // Clustering clustering(il::int_t leaf_size, il::io_t, il::Array2D<double>&
 // node);
 //
-//inline void matrixClustering_aux(const il::Array2D<double>& node,
+// inline void matrixClustering_aux(const il::Array2D<double>& node,
 //                                 const BinaryTree& btree, double eta,
 //                                 il::int_t k, il::int_t k0, il::int_t k1,
 //                                 il::io_t, il::QuadTree& qtree) {
@@ -241,7 +245,7 @@ struct Clustering {
 //  }
 //}
 //
-//inline il::QuadTree matrixClustering(const il::Array2D<double>& node,
+// inline il::QuadTree matrixClustering(const il::Array2D<double>& node,
 //                                     const BinaryTree& btree, double eta) {
 //  il::QuadTree qtree{};
 //  matrixClustering_aux(node, btree, eta, 0, 0, 0, il::io, qtree);

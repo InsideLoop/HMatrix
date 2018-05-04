@@ -7,7 +7,7 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
           const il::HMatrix<double>& B, il::spot_t sb, double beta,
           il::spot_t sc, il::io_t, il::HMatrix<double>& C) {
   IL_EXPECT_MEDIUM(A.size(0, sa) == C.size(0, sc));
-  IL_EXPECT_MEDIUM(B.size(1, sa) == C.size(1, sc));
+  IL_EXPECT_MEDIUM(B.size(1, sb) == C.size(1, sc));
   IL_EXPECT_MEDIUM(A.size(1, sa) == B.size(0, sb));
 
   if (C.isFullRank(sc)) {
@@ -65,15 +65,37 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
     }
   } else if (C.isLowRank(sc)) {
     if (A.isLowRank(sa) && B.isLowRank(sb)) {
-      IL_UNREACHABLE;
+      // FIXME : The branching could be improved as we do exactly as if
+      // C were a Hierarchical matrix (copy and paste of the code)
+      il::Array2DView<double> aa = A.asLowRankA(sa);
+      il::Array2DView<double> ab = A.asLowRankB(sa);
+      il::Array2DView<double> ba = B.asLowRankA(sb);
+      il::Array2DView<double> bb = B.asLowRankB(sb);
+      il::Array2D<double> tmp0{ab.size(1), ba.size(1)};
+      il::blas(1.0, ab, il::Dot::Transpose, ba, 0.0, il::io, tmp0.Edit());
+      il::Array2D<double> tmp1{aa.size(0), ba.size(1)};
+      il::blas(1.0, aa, tmp0.view(), 0.0, il::io, tmp1.Edit());
+      il::blasLowRank(alpha, tmp1.view(), bb, beta, sc, il::io, C);
     } else if (A.isFullRank(sa) && B.isLowRank(sb)) {
       IL_UNREACHABLE;
     } else if (A.isLowRank(sa) && B.isFullRank(sb)) {
       IL_UNREACHABLE;
     } else if (A.isHierarchical(sa) && B.isLowRank(sb)) {
-      IL_UNREACHABLE;
+      // FIXME : The branching could be improved as we do exactly as if
+      // C were a Hierarchical matrix (copy and paste of the code)
+      il::Array2DView<double> ba = B.asLowRankA(sb);
+      il::Array2DView<double> bb = B.asLowRankB(sb);
+      il::Array2D<double> tmp{A.size(0, sa), ba.size(1)};
+      il::blas(1.0, A, sa, ba, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, tmp.view(), bb, beta, sc, il::io, C);
     } else if (A.isLowRank(sa) && B.isHierarchical(sb)) {
-      IL_UNREACHABLE;
+      // FIXME : The branching could be improved as we do exactly as if
+      // C were a Hierarchical matrix (copy and paste of the code)
+      il::Array2DView<double> aa = A.asLowRankA(sa);
+      il::Array2DView<double> ab = A.asLowRankB(sa);
+      il::Array2D<double> tmp{B.size(1, sb), ab.size(1)};
+      il::blas(1.0, B, sb, il::Dot::Transpose, ab, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, aa, tmp.view(), beta, sc, il::io, C);
     } else if (A.isFullRank(sa) && B.isFullRank(sb)) {
       IL_UNREACHABLE;
     } else if (A.isFullRank(sa) && B.isHierarchical(sb)) {
@@ -85,7 +107,22 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
     }
   } else if (C.isHierarchical(sc)) {
     if (A.isHierarchical(sa) && B.isHierarchical(sb)) {
-      IL_UNREACHABLE;
+      il::blas(alpha, A, A.child(sa, 0, 0), B, B.child(sb, 0, 0), beta,
+               C.child(sc, 0, 0), il::io, C);
+      il::blas(alpha, A, A.child(sa, 0, 1), B, B.child(sb, 1, 0), 1.0,
+               C.child(sc, 0, 0), il::io, C);
+      il::blas(alpha, A, A.child(sa, 0, 0), B, B.child(sb, 0, 1), beta,
+               C.child(sc, 0, 1), il::io, C);
+      il::blas(alpha, A, A.child(sa, 0, 1), B, B.child(sb, 1, 1), 1.0,
+               C.child(sc, 0, 1), il::io, C);
+      il::blas(alpha, A, A.child(sa, 1, 0), B, B.child(sb, 0, 0), beta,
+               C.child(sc, 1, 0), il::io, C);
+      il::blas(alpha, A, A.child(sa, 1, 1), B, B.child(sb, 1, 0), 1.0,
+               C.child(sc, 1, 0), il::io, C);
+      il::blas(alpha, A, A.child(sa, 1, 0), B, B.child(sb, 0, 1), beta,
+               C.child(sc, 1, 1), il::io, C);
+      il::blas(alpha, A, A.child(sa, 1, 1), B, B.child(sb, 1, 1), 1.0,
+               C.child(sc, 1, 1), il::io, C);
     } else if (A.isFullRank(sa) && B.isLowRank(sb)) {
       IL_UNREACHABLE;
     } else if (A.isLowRank(sa) && B.isFullRank(sb)) {
@@ -101,9 +138,17 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t sa,
       il::blas(1.0, aa, tmp0.view(), 0.0, il::io, tmp1.Edit());
       il::blasLowRank(alpha, tmp1.view(), bb, beta, sc, il::io, C);
     } else if (A.isHierarchical(sa) && B.isLowRank(sb)) {
-      IL_UNREACHABLE;
+      il::Array2DView<double> ba = B.asLowRankA(sb);
+      il::Array2DView<double> bb = B.asLowRankB(sb);
+      il::Array2D<double> tmp{A.size(0, sa), ba.size(1)};
+      il::blas(1.0, A, sa, ba, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, tmp.view(), bb, beta, sc, il::io, C);
     } else if (A.isLowRank(sa) && B.isHierarchical(sb)) {
-      IL_UNREACHABLE;
+      il::Array2DView<double> aa = A.asLowRankA(sa);
+      il::Array2DView<double> ab = A.asLowRankB(sa);
+      il::Array2D<double> tmp{B.size(1, sb), ab.size(1)};
+      il::blas(1.0, B, sb, il::Dot::Transpose, ab, 0.0, il::io, tmp.Edit());
+      il::blasLowRank(alpha, aa, tmp.view(), beta, sc, il::io, C);
     } else if (A.isHierarchical(sa) && B.isFullRank(sb)) {
       IL_UNREACHABLE;
     } else if (A.isFullRank(sa) && B.isHierarchical(sb)) {
@@ -145,13 +190,13 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t s,
     il::Array2DView<double> B1 =
         B.view(il::Range{n01, n01 + n11}, il::Range{0, B.size(1)});
     il::Array2DEdit<double> C0 =
-        C0.Edit(il::Range{0, n00}, il::Range{0, C.size(1)});
+        C.Edit(il::Range{0, n00}, il::Range{0, C.size(1)});
     il::Array2DEdit<double> C1 =
-        C1.Edit(il::Range{n00, n00 + n10}, il::Range{0, C.size(1)});
+        C.Edit(il::Range{n00, n00 + n10}, il::Range{0, C.size(1)});
     il::blas(alpha, A, s00, B0, beta, il::io, C0);
-    il::blas(alpha, A, s01, B1, beta, il::io, C0);
+    il::blas(alpha, A, s01, B1, 1.0, il::io, C0);
     il::blas(alpha, A, s10, B0, beta, il::io, C1);
-    il::blas(alpha, A, s11, B1, beta, il::io, C1);
+    il::blas(alpha, A, s11, B1, 1.0, il::io, C1);
   } else {
     IL_UNREACHABLE;
   }
@@ -189,13 +234,13 @@ void blas(double alpha, const il::HMatrix<double>& A, il::spot_t s, il::Dot op,
     il::Array2DView<double> B1 =
         B.view(il::Range{n00, n00 + n10}, il::Range{0, B.size(1)});
     il::Array2DEdit<double> C0 =
-        C0.Edit(il::Range{0, n01}, il::Range{0, C.size(1)});
+        C.Edit(il::Range{0, n01}, il::Range{0, C.size(1)});
     il::Array2DEdit<double> C1 =
-        C1.Edit(il::Range{n01, n01 + n11}, il::Range{0, C.size(1)});
+        C.Edit(il::Range{n01, n01 + n11}, il::Range{0, C.size(1)});
     il::blas(alpha, A, s00, il::Dot::Transpose, B0, beta, il::io, C0);
-    il::blas(alpha, A, s10, il::Dot::Transpose, B1, beta, il::io, C0);
+    il::blas(alpha, A, s10, il::Dot::Transpose, B1, 1.0, il::io, C0);
     il::blas(alpha, A, s01, il::Dot::Transpose, B0, beta, il::io, C1);
-    il::blas(alpha, A, s11, il::Dot::Transpose, B1, beta, il::io, C1);
+    il::blas(alpha, A, s11, il::Dot::Transpose, B1, 1.0, il::io, C1);
   } else {
     IL_UNREACHABLE;
   }
@@ -409,14 +454,23 @@ void blas_rec(double alpha, const il::HMatrix<double>& A, il::spot_t s,
     il::Array2DEdit<double> C1 =
         C.Edit(il::Range{n00, n00 + n10}, il::Range{0, C.size(1)});
     if (type == il::MatrixType::LowerUnit) {
+      // FIXME: Are we really going there?????
+      // What the point of this il::MatrixType::LowerUnit anyway???
+      // Anyway, I believe that the coefficients are wrong
+      il::abort();
       il::blas_rec(alpha, A, s00, il::MatrixType::LowerUnit, B0, beta, il::io,
                    C0);
       il::blas_rec(alpha, A, s10, il::MatrixType::Regular, B0, beta, il::io,
                    C1);
       il::blas_rec(alpha, A, s11, il::MatrixType::LowerUnit, B1, beta, il::io,
                    C1);
-    } else {
-      IL_UNREACHABLE;
+    } else if (type == il::MatrixType::Regular) {
+      il::blas_rec(alpha, A, s00, il::MatrixType::Regular, B0, beta, il::io,
+                   C0);
+      il::blas_rec(alpha, A, s01, il::MatrixType::Regular, B1, 1.0, il::io, C0);
+      il::blas_rec(alpha, A, s10, il::MatrixType::Regular, B0, beta, il::io,
+                   C1);
+      il::blas_rec(alpha, A, s11, il::MatrixType::Regular, B1, 1.0, il::io, C1);
     }
     return;
   } else {

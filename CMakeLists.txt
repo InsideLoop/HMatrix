@@ -68,13 +68,15 @@ target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
 ################################################################################
 
 set(UNIT_TEST_FILES
+    cluster/cluster.cpp
     linearAlgebra/blas/hsolve.cpp
     linearAlgebra/blas/hblas.cpp
-        linearAlgebra/factorization/luDecomposition.cpp
-    gtest/src/gtest-all.cc
+    linearAlgebra/factorization/luDecomposition.cpp
     hmatrix/_test/HMatrixUtils_test.cpp
     compression/_test/adaptiveCrossApproximation_test.cpp
-        linearAlgebra/factorization/_test/luDecomposition_test.cpp)
+    linearAlgebra/factorization/_test/luDecomposition_test.cpp
+    gtest/src/gtest-all.cc
+    )
 
 add_executable(HMatrixUnitTest ${SOURCE_FILES} ${UNIT_TEST_FILES} test.cpp)
 target_include_directories(HMatrixUnitTest PUBLIC ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/gtest)

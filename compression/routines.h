@@ -12,7 +12,7 @@
 
 namespace il {
 
-double frobeniusNorm(const il::Array2D<double> &A) {
+inline double frobeniusNorm(const il::Array2D<double> &A) {
   double ans = 0.0;
   for (il::int_t i1 = 0; i1 < A.size(1); ++i1) {
     for (il::int_t i0 = 0; i0 < A.size(0); ++i0) {

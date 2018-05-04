@@ -1,10 +1,17 @@
 #include <gtest/gtest.h>
 
+#include <il/Tree.h>
+#include <il/math.h>
+
 #include <hmatrix/HMatrix.h>
-#include <hmatrix/HMatrix.h>
+#include <hmatrix/HMatrixType.h>
+#include <hmatrix/HMatrixUtils.h>
 #include <linearAlgebra/blas/hsolve.h>
 #include <linearAlgebra/blas/hdot.h>
 #include <linearAlgebra/factorization/luDecomposition.h>
+#include <arrayFunctor/ArrayFunctor.h>
+#include <cluster/cluster.h>
+#include <compression/toHMatrix.h>
 
 TEST(solve, test0) {
   il::HMatrix<double> H{};
@@ -353,4 +360,88 @@ TEST(solve, test3) {
   }
 
   ASSERT_TRUE(result);
+}
+
+TEST(solve, test4) {
+  const il::int_t n = 256;
+  const il::int_t dim = 2;
+  const il::int_t leaf_max_size = 2;
+
+  const double radius = 1.0;
+  il::Array2D<double> point{n, dim};
+  for (il::int_t i = 0; i < n; ++i) {
+    point(i, 0) = radius * std::cos((il::pi * (i + 0.5)) / n);
+    point(i, 1) = radius * std::sin((il::pi * (i + 0.5)) / n);
+  }
+  const il::Cluster cluster = il::cluster(leaf_max_size, il::io, point);
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Here we prepare the compression scheme of the matrix depending upon the
+  // clustering and the relative diameter and distance in between the clusters
+  //////////////////////////////////////////////////////////////////////////////
+  //
+  // And then, the clustering of the matrix, only from the geometry of the
+  // points.
+  // - Use eta = 0 for no compression
+  // - Use eta = 1 for moderate compression
+  // - Use eta = 10 for large compression
+  // We have compression when Max(diam0, diam1) <= eta * distance
+  // Use a large value for eta when you want everything to be Low-Rank when
+  // you are outside the diagonal
+  const double eta = 10.0;
+  const il::Tree<il::SubHMatrix, 4> hmatrix_tree =
+      il::hmatrixTree(point, cluster.partition, eta);
+
+  //////////////////////////////////////////////////////////////////////////////
+  // We build the H-Matrix
+  //////////////////////////////////////////////////////////////////////////////
+  const double alpha = 100.0;
+  const il::Matrix M{point, alpha};
+  const double epsilon = 1.0;
+  il::HMatrix<double> h = il::toHMatrix(M, hmatrix_tree, epsilon);
+
+  // First, we compute the compression ratio
+  std::cout << "Compression ratio: " << il::compressionRatio(h) << std::endl;
+
+  il::Array<double> x{h.size(0), 1.0};
+  il::Array<double> y = il::dot(h, x);
+
+  //////////////////////////////////////////////////////////////////////////////
+  // We convert it to a regular matrix to compute its condition number
+  //////////////////////////////////////////////////////////////////////////////
+  const il::Array2D<double> full_h = il::toArray2D(h);
+  il::Status status{};
+  const il::LU<il::Array2D<double>> full_lu_h{full_h, il::io, status};
+  status.AbortOnError();
+
+  const double norm_full_h = il::norm(full_h, il::Norm::L1);
+  const double cn = full_lu_h.conditionNumber(il::Norm::L1, norm_full_h);
+
+
+  il::Array<double> y_full =   full_lu_h.solve(y);
+
+  double relative_error_full = 0.0;
+  for (il::int_t i = 0; i < y_full.size(); ++i) {
+    const double re = il::abs(y_full[i] - 1.0);
+    if (re > relative_error_full) {
+      relative_error_full = re;
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Let's play with it
+  //////////////////////////////////////////////////////////////////////////////
+
+  il::luDecomposition(il::io, h);
+  il::solve(h, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+
+  double relative_error = 0.0;
+  for (il::int_t i = 0; i < y.size(); ++i) {
+    const double re = il::abs(y[i] - 1.0);
+    if (re > relative_error) {
+      relative_error = re;
+    }
+  }
+
+  ASSERT_TRUE(relative_error <= 1.0e-10);
 }
