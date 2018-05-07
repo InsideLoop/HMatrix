@@ -7,10 +7,10 @@
 #include <il/linearAlgebra/matrixFree/solver/Gmres.h>
 #include <il/linearAlgebra/matrixFree/solver/MatrixFreeGmres.h>
 
-#include "compression/adaptiveCrossApproximation.h"
-#include "compression/toHMatrix.h"
 #include "cluster/cluster.h"
+#include "compression/adaptiveCrossApproximation.h"
 #include "compression/routines.h"
+#include "compression/toHMatrix.h"
 
 double relativeError(const il::Array<double> &a, const il::Array<double> &b) {
   IL_EXPECT_FAST(a.size() == b.size());
@@ -83,9 +83,9 @@ class FedericoMatrix : public il::ArrayFunctor<double> {
   };
   il::StaticArray2D<double, 2, 2> operator()(il::int_t i0, il::int_t i1) const {
     IL_EXPECT_FAST(static_cast<std::size_t>(i0) <
-        static_cast<std::size_t>(nb_elements_));
+                   static_cast<std::size_t>(nb_elements_));
     IL_EXPECT_FAST(static_cast<std::size_t>(i1) <
-        static_cast<std::size_t>(nb_elements_));
+                   static_cast<std::size_t>(nb_elements_));
 
     if (i0 != i1 && diagonal_) {
       return il::StaticArray2D<double, 2, 2>{0.0};

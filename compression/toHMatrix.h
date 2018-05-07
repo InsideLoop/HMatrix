@@ -2,9 +2,9 @@
 
 #include <il/Tree.h>
 
-#include <hmatrix/HMatrix.h>
 #include <arrayFunctor/MatrixGenerator.h>
 #include <compression/adaptiveCrossApproximation.h>
+#include <hmatrix/HMatrix.h>
 
 namespace il {
 
@@ -66,8 +66,8 @@ void hmatrix_rec(const il::MatrixGenerator<double>& matrix,
 }
 
 inline il::HMatrix<double> toHMatrix(const il::MatrixGenerator<double>& matrix,
-                              const il::Tree<il::SubHMatrix, 4>& tree,
-                              double epsilon) {
+                                     const il::Tree<il::SubHMatrix, 4>& tree,
+                                     double epsilon) {
   il::HMatrix<double> ans{};
   if (matrix.blockSize() == 1) {
     hmatrix_rec<1>(matrix, tree, tree.root(), epsilon, ans.root(), il::io, ans);

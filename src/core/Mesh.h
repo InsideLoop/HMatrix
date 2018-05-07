@@ -330,6 +330,6 @@ class Mesh {  // class for 1D wellMesh of 1D segment elements ?
   void addNTipElts(il::int_t t_e, il::int_t the_tip_node, il::int_t n_add,
                    double kink_angle);
 };
-}
+}  // namespace hfp2d
 
 #endif  // HFPX2D_MESH_H

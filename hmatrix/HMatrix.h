@@ -125,14 +125,14 @@ void HMatrix<T>::SetHierarchical(il::spot_t s) {
 
 template <typename T>
 void HMatrix<T>::SetFullRank(il::spot_t s, il::int_t n0, il::int_t n1) {
-//  tree_[s.index].SetFullRank(il::Array2D<T>{n0, n1});
+  //  tree_[s.index].SetFullRank(il::Array2D<T>{n0, n1});
   tree_[s.index].SetFullRank(n0, n1);
 }
 
 template <typename T>
 void HMatrix<T>::SetLowRank(il::spot_t s, il::int_t n0, il::int_t n1,
                             il::int_t r) {
-//  tree_[s.index].SetLowRank(il::Array2D<T>{n0, r}, il::Array2D<T>{n1, r});
+  //  tree_[s.index].SetLowRank(il::Array2D<T>{n0, r}, il::Array2D<T>{n1, r});
   tree_[s.index].SetLowRank(n0, n1, r);
 }
 
@@ -198,7 +198,8 @@ bool HMatrix<T>::isBuilt() const {
 
 template <typename T>
 il::int_t HMatrix<T>::size(il::int_t d, il::spot_t s) const {
-  if (tree_[s.index].isFullRank() || tree_[s.index].isLowRank() || tree_[s.index].isFullLu()) {
+  if (tree_[s.index].isFullRank() || tree_[s.index].isLowRank() ||
+      tree_[s.index].isFullLu()) {
     return tree_[s.index].size(d);
   } else if (tree_[s.index].isEmpty()) {
     IL_UNREACHABLE;

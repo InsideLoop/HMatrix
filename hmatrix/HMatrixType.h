@@ -10,4 +10,4 @@ struct SubHMatrix {
   il::HMatrixType type;
 };
 
-}
+}  // namespace il

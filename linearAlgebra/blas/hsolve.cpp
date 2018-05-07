@@ -54,8 +54,8 @@ void solveLower(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
   }
 }
 
-void solveLower(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
-                il::io_t, il::HMatrix<double>& A) {
+void solveLower(double epsilon, const il::HMatrix<double>& lu, il::spot_t slu,
+                il::spot_t s, il::io_t, il::HMatrix<double>& A) {
   IL_EXPECT_MEDIUM(lu.size(0, slu) == lu.size(1, slu));
   IL_EXPECT_MEDIUM(lu.size(1, slu) == A.size(0, s));
 
@@ -106,12 +106,12 @@ void solveLower(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
       const il::spot_t s01 = A.child(s, 0, 1);
       const il::spot_t s10 = A.child(s, 1, 0);
       const il::spot_t s11 = A.child(s, 1, 1);
-      il::solveLower(lu, slu00, s00, il::io, A);
-      il::solveLower(lu, slu00, s01, il::io, A);
-      il::blas(-1.0, lu, slu10, A, s00, 1.0, s10, il::io, A);
-      il::blas(-1.0, lu, slu10, A, s01, 1.0, s11, il::io, A);
-      il::solveLower(lu, slu11, s10, il::io, A);
-      il::solveLower(lu, slu11, s11, il::io, A);
+      il::solveLower(epsilon, lu, slu00, s00, il::io, A);
+      il::solveLower(epsilon, lu, slu00, s01, il::io, A);
+      il::blas(epsilon, -1.0, lu, slu10, A, s00, 1.0, s10, il::io, A);
+      il::blas(epsilon, -1.0, lu, slu10, A, s01, 1.0, s11, il::io, A);
+      il::solveLower(epsilon, lu, slu11, s10, il::io, A);
+      il::solveLower(epsilon, lu, slu11, s11, il::io, A);
     }
   } else {
     IL_UNREACHABLE;
@@ -271,15 +271,16 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
   }
 }
 
-void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
-                     il::spot_t s, il::io_t, il::HMatrix<double>& A) {
+void solveUpperRight(double epsilon, const il::HMatrix<double>& lu,
+                     il::spot_t slu, il::spot_t s, il::io_t,
+                     il::HMatrix<double>& A) {
   IL_EXPECT_MEDIUM(lu.size(0, slu) == lu.size(1, slu));
   IL_EXPECT_MEDIUM(lu.size(0, slu) == A.size(1, s));
 
   if (lu.isFullLu(slu)) {
     il::Array2DView<double> upper = lu.asFullLu(slu);
     if (A.isFullRank(s)) {
-      //validated
+      // validated
       il::Array2DEdit<double> full = A.AsFullRank(s);
       il::solveRight(upper, il::MatrixType::UpperNonUnit, il::io, full);
     } else if (A.isLowRank(s)) {
@@ -327,12 +328,12 @@ void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
       const il::spot_t s01 = A.child(s, 0, 1);
       const il::spot_t s10 = A.child(s, 1, 0);
       const il::spot_t s11 = A.child(s, 1, 1);
-      il::solveUpperRight(lu, slu00, s00, il::io, A);
-      il::solveUpperRight(lu, slu00, s10, il::io, A);
-      il::blas(-1.0, A, s00, lu, slu01, 1.0, s01, il::io, A);
-      il::blas(-1.0, A, s10, lu, slu01, 1.0, s11, il::io, A);
-      il::solveUpperRight(lu, slu11, s01, il::io, A);
-      il::solveUpperRight(lu, slu11, s11, il::io, A);
+      il::solveUpperRight(epsilon, lu, slu00, s00, il::io, A);
+      il::solveUpperRight(epsilon, lu, slu00, s10, il::io, A);
+      il::blas(epsilon, -1.0, A, s00, lu, slu01, 1.0, s01, il::io, A);
+      il::blas(epsilon, -1.0, A, s10, lu, slu01, 1.0, s11, il::io, A);
+      il::solveUpperRight(epsilon, lu, slu11, s01, il::io, A);
+      il::solveUpperRight(epsilon, lu, slu11, s11, il::io, A);
     }
   } else {
     IL_UNREACHABLE;

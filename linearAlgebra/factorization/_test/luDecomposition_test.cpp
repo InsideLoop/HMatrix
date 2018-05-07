@@ -5,15 +5,15 @@
 #include <il/Tree.h>
 #include <il/math.h>
 
-#include <hmatrix/HMatrix.h>
-#include <hmatrix/HMatrixType.h>
-#include <hmatrix/HMatrixUtils.h>
-#include <linearAlgebra/blas/hsolve.h>
-#include <linearAlgebra/blas/hdot.h>
-#include <linearAlgebra/factorization/luDecomposition.h>
 #include <arrayFunctor/ArrayFunctor.h>
 #include <cluster/cluster.h>
 #include <compression/toHMatrix.h>
+#include <hmatrix/HMatrix.h>
+#include <hmatrix/HMatrixType.h>
+#include <hmatrix/HMatrixUtils.h>
+#include <linearAlgebra/blas/hdot.h>
+#include <linearAlgebra/blas/hsolve.h>
+#include <linearAlgebra/factorization/luDecomposition.h>
 
 TEST(solve, test0) {
   il::HMatrix<double> H{};
@@ -54,7 +54,8 @@ TEST(solve, test0) {
   H10B(0, 0) = 1.0;
   H10B(1, 0) = 1.0;
 
-  il::luDecomposition(il::io, H);
+  const double epsilon_lu = 0.0;
+  il::luDecomposition(epsilon_lu, il::io, H);
 
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
   il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
@@ -104,7 +105,8 @@ TEST(solve, test1) {
   H10B(0, 0) = 1.0;
   H10B(1, 0) = 1.0;
 
-  il::luDecomposition(il::io, H);
+  const double epsilon_lu = 0.0;
+  il::luDecomposition(epsilon_lu, il::io, H);
 
   il::Array<double> y = {il::value, {14.0, 8.0, 25.5, 22.0}};
   il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
@@ -223,7 +225,8 @@ TEST(solve, test2) {
   il::Array<double> x_initial{H.size(1), 1.0};
   il::Array<double> y = il::dot(H, x_initial);
 
-  il::luDecomposition(il::io, H);
+  const double epsilon_lu = 0.0;
+  il::luDecomposition(epsilon_lu, il::io, H);
 
   il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
@@ -349,7 +352,8 @@ TEST(solve, test3) {
   }
   il::Array<double> y = il::dot(H, x_initial);
 
-  il::luDecomposition(il::io, H);
+  const double epsilon_lu = 0.0;
+  il::luDecomposition(epsilon_lu, il::io, H);
 
   il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
@@ -365,7 +369,8 @@ TEST(solve, test3) {
 }
 
 TEST(solve, test4) {
-  const il::int_t n = 8192;
+  const il::int_t n = 32768;
+  //  const il::int_t n = 8192;
   const il::int_t dim = 2;
   const il::int_t leaf_max_size = 256;
 
@@ -426,8 +431,7 @@ TEST(solve, test4) {
   const double norm_full_h = il::norm(full_h, il::Norm::L1);
   const double cn = full_lu_h.conditionNumber(il::Norm::L1, norm_full_h);
 
-
-  il::Array<double> y_full =   full_lu_h.solve(y);
+  il::Array<double> y_full = full_lu_h.solve(y);
 
   double relative_error_full = 0.0;
   for (il::int_t i = 0; i < y_full.size(); ++i) {
@@ -440,14 +444,17 @@ TEST(solve, test4) {
   //////////////////////////////////////////////////////////////////////////////
   // Let's play with it
   //////////////////////////////////////////////////////////////////////////////
-
+  const double epsilon_lu = 1.0e-10;
+  //  const double epsilon_lu = 0;
   timer.Reset();
   timer.Start();
-  il::luDecomposition(il::io, h);
+  il::luDecomposition(epsilon_lu, il::io, h);
   timer.Stop();
   il::solve(h, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
 
   std::cout << "Time for HLU-decomposition: " << timer.time() << std::endl;
+  std::cout << "Compression ratio of HLU-decomposition: "
+            << il::compressionRatio(h) << std::endl;
 
   double relative_error = 0.0;
   for (il::int_t i = 0; i < y.size(); ++i) {

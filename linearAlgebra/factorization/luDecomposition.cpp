@@ -20,10 +20,11 @@
 
 namespace il {
 
-void luDecomposition(il::io_t, il::HMatrix<double>& H) {
-  luDecomposition(H.root(), il::io, H);
+void luDecomposition(double epsilon, il::io_t, il::HMatrix<double>& H) {
+  luDecomposition(epsilon, H.root(), il::io, H);
 }
-void luDecomposition(il::spot_t s, il::io_t, il::HMatrix<double>& H) {
+void luDecomposition(double epsilon, il::spot_t s, il::io_t,
+                     il::HMatrix<double>& H) {
   if (H.isFullRank(s)) {
     H.ConvertToFullLu(s);
     il::ArrayEdit<int> pivot = H.AsFullLuPivot(s);
@@ -34,11 +35,11 @@ void luDecomposition(il::spot_t s, il::io_t, il::HMatrix<double>& H) {
     const il::spot_t s01 = H.child(s, 0, 1);
     const il::spot_t s10 = H.child(s, 1, 0);
     const il::spot_t s11 = H.child(s, 1, 1);
-    luDecomposition(s00, il::io, H);
-    il::solveLower(H, s00, s01, il::io, H);
-    il::solveUpperRight(H, s00, s10, il::io, H);
-    il::blas(-1.0, H, s10, H, s01, 1.0, s11, il::io, H);
-    il::luDecomposition(s11, il::io, H);
+    luDecomposition(epsilon, s00, il::io, H);
+    il::solveLower(epsilon, H, s00, s01, il::io, H);
+    il::solveUpperRight(epsilon, H, s00, s10, il::io, H);
+    il::blas(epsilon, -1.0, H, s10, H, s01, 1.0, s11, il::io, H);
+    il::luDecomposition(epsilon, s11, il::io, H);
   }
 }
 

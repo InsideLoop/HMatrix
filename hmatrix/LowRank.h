@@ -10,4 +10,4 @@ struct LowRank {
   il::Array2D<T> B;
 };
 
-}
+}  // namespace il

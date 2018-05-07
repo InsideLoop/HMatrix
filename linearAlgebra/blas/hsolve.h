@@ -30,8 +30,8 @@ void solveLower(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                 il::ArrayEdit<double> x);
 void solveLower(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                 il::Array2DEdit<double> A);
-void solveLower(const il::HMatrix<double>& lu, il::spot_t slu, il::spot_t s,
-                il::io_t, il::HMatrix<double>& A);
+void solveLower(double epsilon, const il::HMatrix<double>& lu, il::spot_t slu,
+                il::spot_t s, il::io_t, il::HMatrix<double>& A);
 
 void solveUpper(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                 il::ArrayEdit<double> x);
@@ -47,7 +47,8 @@ void solveUpperTranspose(const il::HMatrix<double>& lu, il::spot_t slu,
 
 void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t s, il::io_t,
                      il::Array2DEdit<double> A);
-void solveUpperRight(const il::HMatrix<double>& lu, il::spot_t slu,
-                     il::spot_t s, il::io_t, il::HMatrix<double>& A);
+void solveUpperRight(double epsilon, const il::HMatrix<double>& lu,
+                     il::spot_t slu, il::spot_t s, il::io_t,
+                     il::HMatrix<double>& A);
 
 }  // namespace il

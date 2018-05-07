@@ -6,9 +6,9 @@
 
 namespace il {
 
-il::Tree<il::SubHMatrix, 4> hmatrixTree(const il::Array2D<double> &node,
-                                       const il::Tree<il::Range, 2> &range_tree,
-                                       double eta) {
+il::Tree<il::SubHMatrix, 4> hmatrixTree(
+    const il::Array2D<double> &node, const il::Tree<il::Range, 2> &range_tree,
+    double eta) {
   il::Tree<il::SubHMatrix, 4> hmatrix_tree{};
   hmatrixTree_rec(node, range_tree, eta, hmatrix_tree.root(), range_tree.root(),
                   range_tree.root(), il::io, hmatrix_tree);
@@ -24,13 +24,13 @@ void hmatrixTree_rec(const il::Array2D<double> &node,
   if (is_admissible) {
     hmatrix_tree.Set(s,
                      il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
-                                   il::HMatrixType::LowRank});
+                                    il::HMatrixType::LowRank});
   } else {
     if (range_tree.hasChild(s0, 0) && range_tree.hasChild(s0, 1) &&
         range_tree.hasChild(s1, 0) && range_tree.hasChild(s1, 1)) {
-      hmatrix_tree.Set(s,
-                       il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
-                                     il::HMatrixType::Hierarchical});
+      hmatrix_tree.Set(
+          s, il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
+                            il::HMatrixType::Hierarchical});
       hmatrix_tree.AddChild(s, 0);
       hmatrixTree_rec(node, range_tree, eta, hmatrix_tree.child(s, 0),
                       range_tree.child(s0, 0), range_tree.child(s1, 0), il::io,
@@ -49,14 +49,14 @@ void hmatrixTree_rec(const il::Array2D<double> &node,
                       hmatrix_tree);
     } else if ((range_tree.hasChild(s0, 0) && range_tree.hasChild(s0, 1)) ||
                (range_tree.hasChild(s1, 0) && range_tree.hasChild(s1, 1))) {
-      hmatrix_tree.Set(s,
-                       il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
-                                     il::HMatrixType::FullRank});
+      hmatrix_tree.Set(
+          s, il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
+                            il::HMatrixType::FullRank});
     } else {
       // FIXME
-      hmatrix_tree.Set(s,
-                       il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
-                                     il::HMatrixType::FullRank});
+      hmatrix_tree.Set(
+          s, il::SubHMatrix{range_tree.value(s0), range_tree.value(s1),
+                            il::HMatrixType::FullRank});
     }
   }
 }

@@ -499,4 +499,4 @@ il::StaticArray2D<double, 2, 2> normal_shear_stress_kernel_s3d_dp0_dd_nodal(
 
   return St;
 };
-}
+}  // namespace hfp2d

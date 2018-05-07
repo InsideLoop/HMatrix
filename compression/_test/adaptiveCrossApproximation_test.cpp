@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include <hmatrix/HMatrixUtils.h>
-#include <hmatrix/HMatrixType.h>
 #include <arrayFunctor/GaussianMatrix.h>
 #include <compression/toHMatrix.h>
+#include <hmatrix/HMatrixType.h>
+#include <hmatrix/HMatrixUtils.h>
 
 TEST(adaptiveCrossApproximation, test0) {
   const il::int_t n = 4;
@@ -14,7 +14,7 @@ TEST(adaptiveCrossApproximation, test0) {
   il::Tree<il::SubHMatrix, 4> tree{};
   const il::spot_t s = tree.root();
   tree.Set(s, il::SubHMatrix{il::Range{0, n}, il::Range{0, n},
-                            il::HMatrixType::LowRank});
+                             il::HMatrixType::LowRank});
 
   const double epsilon = 1.0e-4;
   const il::HMatrix<double> H = il::toHMatrix(G, tree, epsilon);
