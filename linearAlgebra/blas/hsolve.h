@@ -22,6 +22,10 @@
 
 #include <hmatrix/HMatrix.h>
 
+#ifdef IL_PARALLEL
+#include <tbb/tbb.h>
+#endif
+
 namespace il {
 
 template <typename T>
@@ -178,12 +182,30 @@ void solveLower(double epsilon, const il::HMatrix<T>& lu, il::spot_t slu,
       const il::spot_t s01 = A.child(s, 0, 1);
       const il::spot_t s10 = A.child(s, 1, 0);
       const il::spot_t s11 = A.child(s, 1, 1);
+#ifdef IL_PARALLEL
+      tbb::parallel_invoke(
+          [&] { il::solveLower(epsilon, lu, slu00, s00, il::io, A); },
+          [&] { il::solveLower(epsilon, lu, slu00, s01, il::io, A); });
+      tbb::parallel_invoke(
+          [&] {
+            il::blas(epsilon, T{-1.0}, lu, slu10, A, s00, T{1.0}, s10, il::io,
+                     A);
+          },
+          [&] {
+            il::blas(epsilon, T{-1.0}, lu, slu10, A, s01, T{1.0}, s11, il::io,
+                     A);
+          });
+      tbb::parallel_invoke(
+          [&] { il::solveLower(epsilon, lu, slu11, s10, il::io, A); },
+          [&] { il::solveLower(epsilon, lu, slu11, s11, il::io, A); });
+#else
       il::solveLower(epsilon, lu, slu00, s00, il::io, A);
       il::solveLower(epsilon, lu, slu00, s01, il::io, A);
       il::blas(epsilon, T{-1.0}, lu, slu10, A, s00, T{1.0}, s10, il::io, A);
       il::blas(epsilon, T{-1.0}, lu, slu10, A, s01, T{1.0}, s11, il::io, A);
       il::solveLower(epsilon, lu, slu11, s10, il::io, A);
       il::solveLower(epsilon, lu, slu11, s11, il::io, A);
+#endif
     }
   } else {
     IL_UNREACHABLE;
@@ -405,12 +427,30 @@ void solveUpperRight(double epsilon, const il::HMatrix<T>& lu, il::spot_t slu,
       const il::spot_t s01 = A.child(s, 0, 1);
       const il::spot_t s10 = A.child(s, 1, 0);
       const il::spot_t s11 = A.child(s, 1, 1);
+#ifdef IL_PARALLEL
+      tbb::parallel_invoke(
+          [&] { il::solveUpperRight(epsilon, lu, slu00, s00, il::io, A); },
+          [&] { il::solveUpperRight(epsilon, lu, slu00, s10, il::io, A); });
+      tbb::parallel_invoke(
+          [&] {
+            il::blas(epsilon, T{-1.0}, A, s00, lu, slu01, T{1.0}, s01, il::io,
+                     A);
+          },
+          [&] {
+            il::blas(epsilon, T{-1.0}, A, s10, lu, slu01, T{1.0}, s11, il::io,
+                     A);
+          });
+      tbb::parallel_invoke(
+          [&] { il::solveUpperRight(epsilon, lu, slu11, s01, il::io, A); },
+          [&] { il::solveUpperRight(epsilon, lu, slu11, s11, il::io, A); });
+#else
       il::solveUpperRight(epsilon, lu, slu00, s00, il::io, A);
       il::solveUpperRight(epsilon, lu, slu00, s10, il::io, A);
       il::blas(epsilon, T{-1.0}, A, s00, lu, slu01, T{1.0}, s01, il::io, A);
       il::blas(epsilon, T{-1.0}, A, s10, lu, slu01, T{1.0}, s11, il::io, A);
       il::solveUpperRight(epsilon, lu, slu11, s01, il::io, A);
       il::solveUpperRight(epsilon, lu, slu11, s11, il::io, A);
+#endif
     }
   } else {
     IL_UNREACHABLE;

@@ -468,7 +468,7 @@ TEST(solve, test4) {
 }
 
 TEST(solve, test5) {
-  const il::int_t n = 32768;
+  const il::int_t n = 4 * 32768;
   const il::int_t dim = 2;
   const il::int_t leaf_max_size = 256;
 

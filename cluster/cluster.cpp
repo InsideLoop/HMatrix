@@ -9,7 +9,8 @@ namespace il {
 il::Tree<il::SubHMatrix, 4> hmatrixTree(
     const il::Array2D<double> &node, const il::Tree<il::Range, 2> &range_tree,
     double eta) {
-  il::Tree<il::SubHMatrix, 4> hmatrix_tree{};
+  const il::int_t d = range_tree.depth();
+  il::Tree<il::SubHMatrix, 4> hmatrix_tree{d};
   hmatrixTree_rec(node, range_tree, eta, hmatrix_tree.root(), range_tree.root(),
                   range_tree.root(), il::io, hmatrix_tree);
   return hmatrix_tree;

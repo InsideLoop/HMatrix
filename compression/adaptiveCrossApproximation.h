@@ -1,8 +1,8 @@
 #pragma once
 
 #include <il/Timer.h>
-#include <il/math.h>
 #include <il/linearAlgebra/dense/blas/blas_static.h>
+#include <il/math.h>
 
 #include <compression/routines.h>
 #include <hmatrix/LowRank.h>
@@ -119,7 +119,8 @@ LowRank<T> adaptiveCrossApproximation(const il::MatrixGenerator<T>& M,
     T frobenius_norm_ab = 0.0;
     for (il::int_t b1 = 0; b1 < p; ++b1) {
       for (il::int_t b0 = 0; b0 < p; ++b0) {
-        frobenius_norm_ab += frobenius_A(b0, b1) * frobenius_B(b0, b1);
+        frobenius_norm_ab +=
+            frobenius_A(b0, b1) * il::conjugate(frobenius_B(b0, b1));
       }
     }
     // Compute the T scalar product
@@ -143,11 +144,13 @@ LowRank<T> adaptiveCrossApproximation(const il::MatrixGenerator<T>& M,
 
       for (il::int_t j1 = 0; j1 < n1 * p; ++j1) {
         for (il::int_t b = 0; b < p; ++b) {
-          scalar_product += B(r * p + b, j1) * ars_arank_brank(b, j1);
+          scalar_product +=
+              il::conjugate(B(r * p + b, j1)) * ars_arank_brank(b, j1);
         }
       }
     }
-    frobenius_low_rank += 2 * il::real(scalar_product) + il::real(frobenius_norm_ab);
+    frobenius_low_rank +=
+        2 * il::real(scalar_product) + il::real(frobenius_norm_ab);
 
     i0_search = il::searchI0<p>(A, range0, range1, i0_used, i1_search, rank);
     ++rank;

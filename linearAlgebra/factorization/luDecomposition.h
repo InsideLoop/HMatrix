@@ -3,14 +3,17 @@
 #include <hmatrix/HMatrix.h>
 #include <il/linearAlgebra/dense/factorization/luDecomposition.h>
 
+#ifdef IL_PARALLEL
+#include <tbb/tbb.h>
+#endif
+
 namespace il {
 
 template <typename T>
 void luDecomposition(double epsilon, il::io_t, il::HMatrix<T>& H);
 
 template <typename T>
-void luDecomposition(double epsilon, il::spot_t s, il::io_t,
-                     il::HMatrix<T>& H);
+void luDecomposition(double epsilon, il::spot_t s, il::io_t, il::HMatrix<T>& H);
 
 template <typename T>
 void luDecomposition(double epsilon, il::io_t, il::HMatrix<T>& H) {
@@ -31,8 +34,14 @@ void luDecomposition(double epsilon, il::spot_t s, il::io_t,
     const il::spot_t s10 = H.child(s, 1, 0);
     const il::spot_t s11 = H.child(s, 1, 1);
     luDecomposition(epsilon, s00, il::io, H);
+#ifdef IL_PARALLEL
+    tbb::parallel_invoke(
+        [&] { il::solveLower(epsilon, H, s00, s01, il::io, H); },
+        [&] { il::solveUpperRight(epsilon, H, s00, s10, il::io, H); });
+#else
     il::solveLower(epsilon, H, s00, s01, il::io, H);
     il::solveUpperRight(epsilon, H, s00, s10, il::io, H);
+#endif
     il::blas(epsilon, T{-1.0}, H, s10, H, s01, T{1.0}, s11, il::io, H);
     il::luDecomposition(epsilon, s11, il::io, H);
   }

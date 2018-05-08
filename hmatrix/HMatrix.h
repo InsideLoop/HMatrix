@@ -16,6 +16,7 @@ class HMatrix {
 
  public:
   HMatrix();
+  HMatrix(il::int_t d);
 
   il::int_t size(il::int_t d) const;
   il::int_t size(il::int_t d, il::spot_t s) const;
@@ -59,6 +60,16 @@ class HMatrix {
 
 template <typename T>
 HMatrix<T>::HMatrix() : tree_{1} {}
+
+template <typename T>
+HMatrix<T>::HMatrix(il::int_t d) : tree_{1} {
+  il::int_t m = 4;
+  for (il::int_t k = 0; k < d; ++k) {
+    m *= 4;
+  }
+  m = (m - 1) / (4 - 1);
+  tree_.Reserve(m);
+}
 
 template <typename T>
 il::int_t HMatrix<T>::size(il::int_t d) const {

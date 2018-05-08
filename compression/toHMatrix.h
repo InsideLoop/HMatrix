@@ -6,6 +6,10 @@
 #include <compression/adaptiveCrossApproximation.h>
 #include <hmatrix/HMatrix.h>
 
+#ifdef IL_PARALLEL
+#include <tbb/tbb.h>
+#endif
+
 namespace il {
 
 template <il::int_t p, typename T>
@@ -45,6 +49,33 @@ void hmatrix_rec(const il::MatrixGenerator<T>& matrix,
     } break;
     case il::HMatrixType::Hierarchical: {
       hm.SetHierarchical(shm);
+
+//#ifdef IL_PARALLEL
+// This cannot be done for the time being because allocating new nodes
+// is not thread-safe
+//      tbb::parallel_invoke(
+//          [&] {
+//            const il::spot_t st00 = tree.child(st, 0);
+//            const il::spot_t shm00 = hm.child(shm, 0, 0);
+//            hmatrix_rec<p>(matrix, tree, st00, epsilon, shm00, il::io, hm);
+//          },
+//
+//          [&] {
+//            const il::spot_t st10 = tree.child(st, 1);
+//            const il::spot_t shm10 = hm.child(shm, 1, 0);
+//            hmatrix_rec<p>(matrix, tree, st10, epsilon, shm10, il::io, hm);
+//          },
+//          [&] {
+//            const il::spot_t st01 = tree.child(st, 2);
+//            const il::spot_t shm01 = hm.child(shm, 0, 1);
+//            hmatrix_rec<p>(matrix, tree, st01, epsilon, shm01, il::io, hm);
+//          },
+//          [&] {
+//            const il::spot_t st11 = tree.child(st, 3);
+//            const il::spot_t shm11 = hm.child(shm, 1, 1);
+//            hmatrix_rec<p>(matrix, tree, st11, epsilon, shm11, il::io, hm);
+//          });
+//#else
       const il::spot_t st00 = tree.child(st, 0);
       const il::spot_t shm00 = hm.child(shm, 0, 0);
       hmatrix_rec<p>(matrix, tree, st00, epsilon, shm00, il::io, hm);
@@ -57,18 +88,20 @@ void hmatrix_rec(const il::MatrixGenerator<T>& matrix,
       const il::spot_t st11 = tree.child(st, 3);
       const il::spot_t shm11 = hm.child(shm, 1, 1);
       hmatrix_rec<p>(matrix, tree, st11, epsilon, shm11, il::io, hm);
+//#endif
       return;
     } break;
     default:
       IL_UNREACHABLE;
   }
-}
+}  // namespace il
 
 template <typename T>
 il::HMatrix<T> toHMatrix(const il::MatrixGenerator<T>& matrix,
                          const il::Tree<il::SubHMatrix, 4>& tree,
                          double epsilon) {
-  il::HMatrix<T> ans{};
+  const il::int_t d = tree.depth();
+  il::HMatrix<T> ans{d};
   if (matrix.blockSize() == 1) {
     hmatrix_rec<1>(matrix, tree, tree.root(), epsilon, ans.root(), il::io, ans);
   } else if (matrix.blockSize() == 2) {
