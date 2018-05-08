@@ -110,9 +110,11 @@ void blas(double epsilon, T alpha, const il::HMatrix<T>& A, il::spot_t sa,
       il::blas(T{1.0}, A, sa, ba, T{0.0}, il::io, tmp.Edit());
       il::blas(alpha, tmp.view(), bb, il::Dot::Transpose, beta, il::io, c);
     } else if (A.isHierarchical(sa) && B.isHierarchical(sb)) {
-      // The trick is to convert the matrix A into a low rank matrix and follow
-      // one of the previous method
-      IL_UNREACHABLE;
+      il::LowRank<T> lrb = il::lowRank(epsilon, B, sb);
+      il::Array2D<T> tmp{A.size(0, sa), lrb.A.size(1)};
+      il::blas(T{1.0}, A, sa, lrb.A.view(), T{0.0}, il::io, tmp.Edit());
+      il::blas(alpha, tmp.view(), lrb.B.view(), il::Dot::Transpose, beta,
+               il::io, c);
     }
   } else if (C.isHierarchical(sc) || C.isLowRank(sc)) {
     if (A.isLowRank(sa) && B.isLowRank(sb)) {
@@ -164,9 +166,20 @@ void blas(double epsilon, T alpha, const il::HMatrix<T>& A, il::spot_t sa,
       il::blasLowRank(epsilon, alpha, tmp0.view(), tmp1.view(), beta, sc,
                       il::io, C);
     } else if (A.isFullRank(sa) && B.isHierarchical(sb)) {
-      IL_UNREACHABLE;
+      il::Array2DView<T> a = A.asFullRank(sa);
+      il::LowRank<T> lrb = il::lowRank(epsilon, B, sb);
+      il::Array2D<T> tmp{a.size(0), lrb.A.size(1)};
+      il::blas(T{1.0}, a, lrb.A.view(), T{0.0}, il::io, tmp.Edit());
+      il::blasLowRank(epsilon, alpha, tmp.view(), lrb.B.view(), beta, sc,
+                      il::io, C);
     } else if (A.isHierarchical(sa) && B.isFullRank(sb)) {
-      IL_UNREACHABLE;
+      il::LowRank<T> lra = il::lowRank(epsilon, A, sa);
+      il::Array2DView<T> b = B.asFullRank(sb);
+      il::Array2D<T> tmp{b.size(1), lra.B.size(1)};
+      il::blas(T{1.0}, b, il::Dot::Transpose, lra.B.view(), T{0.0}, il::io,
+               tmp.Edit());
+      il::blasLowRank(epsilon, alpha, lra.A.view(), tmp.view(), beta, sc,
+                      il::io, C);
     } else if (A.isHierarchical(sa) && B.isHierarchical(sb)) {
       if (C.isHierarchical(sc)) {
         il::blas(epsilon, alpha, A, A.child(sa, 0, 0), B, B.child(sb, 0, 0),
@@ -408,8 +421,10 @@ void blas_rec(T alpha, const il::HMatrix<T>& A, il::spot_t s,
     if (type == il::MatrixType::Regular) {
       il::blas(alpha, a, x, beta, il::io, y);
     } else if (type == il::MatrixType::LowerUnit) {
+      il::abort();
       IL_UNREACHABLE;
     } else {
+      il::abort();
       IL_UNREACHABLE;
     }
     return;
@@ -472,8 +487,10 @@ void blas_rec(T alpha, const il::HMatrix<T>& A, il::spot_t s,
     if (type == il::MatrixType::Regular) {
       il::blas(alpha, a, B, beta, il::io, C);
     } else if (type == il::MatrixType::LowerUnit) {
+      il::abort();
       IL_UNREACHABLE;
     } else {
+      il::abort();
       IL_UNREACHABLE;
     }
     return;

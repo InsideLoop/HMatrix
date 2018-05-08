@@ -2,8 +2,10 @@
 
 #include <iostream>
 
-#include <hmatrix/HMatrix.h>
 #include <il/linearAlgebra/dense/factorization/luDecomposition.h>
+
+#include <hmatrix/HMatrix.h>
+#include <linearAlgebra/blas/hsolve.h>
 
 #ifdef IL_PARALLEL
 #include <tbb/tbb.h>
@@ -58,15 +60,15 @@ void luDecomposition(double epsilon, il::spot_t s, il::io_t,
     il::blas(epsilon, T{-1.0}, H, s10, H, s01, T{1.0}, s11, il::io, H);
     il::luDecomposition(epsilon, s11, il::io, H);
     timer11.Stop();
-    if (s.index == 0) {
-      std::cout << "Time00: " << timer00.time() << "s" << std::endl;
+//    if (s.index == 0) {
+//      std::cout << "Time00: " << timer00.time() << "s" << std::endl;
 #ifdef IL_PARALLEL
 #else
-      std::cout << "Time01: " << timer01.time() << "s" << std::endl;
-      std::cout << "Time10: " << timer10.time() << "s" << std::endl;
+//      std::cout << "Time01: " << timer01.time() << "s" << std::endl;
+//      std::cout << "Time10: " << timer10.time() << "s" << std::endl;
 #endif
-      std::cout << "Time11: " << timer11.time() << "s" << std::endl;
-    }
+//      std::cout << "Time11: " << timer11.time() << "s" << std::endl;
+//    }
   }
 }
 

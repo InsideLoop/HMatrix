@@ -72,7 +72,7 @@ add_executable(HMatrix
         linearAlgebra/blas/hblas.h
         arrayFunctor/FullMatrix.h)
 
-target_include_directories(HMatrix PRIVATE /Users/fayard/Documents/Projects/InsideLoop/InsideLoop /Users/fayard/Documents/Projects/EPFL/HMatrix)
+target_include_directories(HMatrix PRIVATE ${CMAKE_SOURCE_DIR})
 if (IL_PARALLEL)
     target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES} tbb)
 else()

@@ -74,7 +74,7 @@ TEST(solve, test0) {
   il::luDecomposition(epsilon_lu, il::io, H);
 
   il::Array<double> y = {il::value, {10.0, 16.0, 18.0, 27.0}};
-  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+  il::solve(H, il::io, y.Edit());
 
   const double eps = 1.0e-10;
 
@@ -125,7 +125,7 @@ TEST(solve, test1) {
   il::luDecomposition(epsilon_lu, il::io, H);
 
   il::Array<double> y = {il::value, {14.0, 8.0, 25.5, 22.0}};
-  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+  il::solve(H, il::io, y.Edit());
 
   const double eps = 1.0e-14;
 
@@ -244,7 +244,7 @@ TEST(solve, test2) {
   const double epsilon_lu = 0.0;
   il::luDecomposition(epsilon_lu, il::io, H);
 
-  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+  il::solve(H, il::io, y.Edit());
 
   bool result = true;
   const double eps = 1.0e-14;
@@ -371,7 +371,7 @@ TEST(solve, test3) {
   const double epsilon_lu = 0.0;
   il::luDecomposition(epsilon_lu, il::io, H);
 
-  il::solve(H, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+  il::solve(H, il::io, y.Edit());
 
   bool result = true;
   const double eps = 1.0e-14;
@@ -468,7 +468,7 @@ TEST(solve, test4) {
   timer.Start();
   il::luDecomposition(epsilon_lu, il::io, h);
   timer.Stop();
-  il::solve(h, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+  il::solve(h, il::io, y.Edit());
 
   std::cout << "Time for HLU-decomposition: " << timer.time() << std::endl;
   std::cout << "Compression ratio of HLU-decomposition: "
@@ -524,7 +524,7 @@ TEST(solve, test5) {
   timer.Start();
   il::luDecomposition(epsilon_lu, il::io, h);
   timer.Stop();
-  il::solve(h, il::MatrixType::LowerUnitUpperNonUnit, il::io, y.Edit());
+  il::solve(h, il::io, y.Edit());
 
   std::cout << "Time for HLU-decomposition: " << timer.time() << std::endl;
   std::cout << "Compression ratio of HLU-decomposition: "

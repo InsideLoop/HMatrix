@@ -77,10 +77,7 @@ void solveUpperRight(double epsilon, const il::HMatrix<T>& lu, il::spot_t slu,
                      il::spot_t s, il::io_t, il::HMatrix<T>& A);
 
 template <typename T>
-void solve(const il::HMatrix<T>& lu, il::MatrixType type, il::io_t,
-           il::ArrayEdit<T> xy) {
-  IL_EXPECT_FAST(type == il::MatrixType::LowerUnitUpperNonUnit);
-
+void solve(const il::HMatrix<T>& lu, il::io_t, il::ArrayEdit<T> xy) {
   il::solve(lu, lu.root(), il::io, xy);
 }
 
@@ -266,6 +263,7 @@ void solveUpper(const il::HMatrix<T>& lu, il::spot_t slu, il::spot_t s,
     } else {
       IL_EXPECT_MEDIUM(A.isHierarchical(s));
       IL_UNREACHABLE;
+      il::abort();
       // Not sure if this needs to be implemented
     }
   } else if (lu.isHierarchical(slu)) {
