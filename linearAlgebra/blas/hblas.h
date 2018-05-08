@@ -5,7 +5,7 @@
 #include <hmatrix/HMatrix.h>
 #include <hmatrix/LowRank.h>
 #include <linearAlgebra/blas/hblas.h>
-#include <linearAlgebra/factorization/lowRankAddition.h>
+#include <linearAlgebra/factorization/lowRankApproximation.h>
 
 namespace il {
 
@@ -100,7 +100,8 @@ void blas(double epsilon, T alpha, const il::HMatrix<T>& A, il::spot_t sa,
       il::Array2DView<T> aa = A.asLowRankA(sa);
       il::Array2DView<T> ab = A.asLowRankB(sa);
       il::Array2D<T> tmp{B.size(1, sb), ab.size(1)};
-      il::blas(T{1.0}, B, sb, il::Dot::Transpose, ab, T{0.0}, il::io, tmp.Edit());
+      il::blas(T{1.0}, B, sb, il::Dot::Transpose, ab, T{0.0}, il::io,
+               tmp.Edit());
       il::blas(alpha, aa, tmp.view(), il::Dot::Transpose, beta, il::io, c);
     } else if (A.isHierarchical(sa) && B.isLowRank(sb)) {
       il::Array2DView<T> ba = B.asLowRankA(sb);
@@ -148,7 +149,8 @@ void blas(double epsilon, T alpha, const il::HMatrix<T>& A, il::spot_t sa,
       il::Array2DView<T> aa = A.asLowRankA(sa);
       il::Array2DView<T> ab = A.asLowRankB(sa);
       il::Array2D<T> tmp{B.size(1, sb), ab.size(1)};
-      il::blas(T{1.0}, B, sb, il::Dot::Transpose, ab, T{0.0}, il::io, tmp.Edit());
+      il::blas(T{1.0}, B, sb, il::Dot::Transpose, ab, T{0.0}, il::io,
+               tmp.Edit());
       il::blasLowRank(epsilon, alpha, aa, tmp.view(), beta, sc, il::io, C);
     } else if (A.isFullRank(sa) && B.isFullRank(sb)) {
       il::Array2DView<T> a = A.asFullRank(sa);
@@ -184,7 +186,12 @@ void blas(double epsilon, T alpha, const il::HMatrix<T>& A, il::spot_t sa,
         il::blas(epsilon, alpha, A, A.child(sa, 1, 1), B, B.child(sb, 1, 1),
                  T{1.0}, C.child(sc, 1, 1), il::io, C);
       } else {
-        IL_UNREACHABLE;
+        IL_EXPECT_FAST(C.isLowRank(sc));
+        il::LowRank<T> lrb = il::lowRank(epsilon, B, sb);
+        il::Array2D<T> tmp{A.size(0, sa), lrb.A.size(1)};
+        il::blas(T{1.0}, A, sa, lrb.A.view(), T{0.0}, il::io, tmp.Edit());
+        il::blasLowRank(epsilon, alpha, tmp.view(), lrb.B.view(), beta, sc,
+                        il::io, C);
       }
     }
   } else {
@@ -303,10 +310,10 @@ void blas(T alpha, il::Array2DView<T> A, const il::HMatrix<T>& B, il::spot_t s,
     const il::int_t n11 = B.size(1, s01);
     il::Array2DView<T> A0 = A.view(il::Range{0, A.size(0)}, il::Range{0, n00});
     il::Array2DView<T> A1 =
-        A.view(il::Range{0, A.size(0)}, il::Range{n00 + n10});
+        A.view(il::Range{0, A.size(0)}, il::Range{n00, n00 + n10});
     il::Array2DEdit<T> C0 = C.Edit(il::Range{0, C.size(0)}, il::Range{0, n01});
     il::Array2DEdit<T> C1 =
-        C.Edit(il::Range{0, C.size(0)}, il::Range{n01 + n11});
+        C.Edit(il::Range{0, C.size(0)}, il::Range{n01, n01 + n11});
     il::blas(alpha, A0, B, s00, beta, il::io, C0);
     il::blas(alpha, A1, B, s10, beta, il::io, C0);
     il::blas(alpha, A0, B, s01, beta, il::io, C1);
@@ -507,10 +514,12 @@ void blas_rec(T alpha, const il::HMatrix<T>& A, il::spot_t s,
     } else if (type == il::MatrixType::Regular) {
       il::blas_rec(alpha, A, s00, il::MatrixType::Regular, B0, beta, il::io,
                    C0);
-      il::blas_rec(alpha, A, s01, il::MatrixType::Regular, B1, T{1.0}, il::io, C0);
+      il::blas_rec(alpha, A, s01, il::MatrixType::Regular, B1, T{1.0}, il::io,
+                   C0);
       il::blas_rec(alpha, A, s10, il::MatrixType::Regular, B0, beta, il::io,
                    C1);
-      il::blas_rec(alpha, A, s11, il::MatrixType::Regular, B1, T{1.0}, il::io, C1);
+      il::blas_rec(alpha, A, s11, il::MatrixType::Regular, B1, T{1.0}, il::io,
+                   C1);
     }
     return;
   } else {

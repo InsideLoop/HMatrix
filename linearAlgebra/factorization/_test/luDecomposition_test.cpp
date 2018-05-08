@@ -15,6 +15,22 @@
 #include <linearAlgebra/blas/hsolve.h>
 #include <linearAlgebra/factorization/luDecomposition.h>
 
+TEST(lowRank, test0) {
+  il::Array2D<double> A{il::value,
+                        {{1.0, 0.0, 0.0, 0.0},
+                         {0.0, 2.0, 0.0, 0.0},
+                         {0.0, 0.0, 0.5, 0.0},
+                         {0.0, 0.0, 0.0, 0.0}}};
+
+  const double epsilon = 0.2;
+  il::LowRank<double> ab = il::lowRank(epsilon, A.view());
+
+  const int dummy = 0;
+  (void)dummy;
+
+  ASSERT_TRUE(true);
+}
+
 TEST(solve, test0) {
   il::HMatrix<double> H{};
   const il::spot_t s = H.root();
@@ -395,7 +411,8 @@ TEST(solve, test4) {
   // We have compression when Max(diam0, diam1) <= eta * distance
   // Use a large value for eta when you want everything to be Low-Rank when
   // you are outside the diagonal
-  const double eta = 10.0;
+//  const double eta = 10.0;
+  const double eta = 0.1;
   const il::Tree<il::SubHMatrix, 4> hmatrix_tree =
       il::hmatrixTree(point, cluster.partition, eta);
 
@@ -418,28 +435,29 @@ TEST(solve, test4) {
   //////////////////////////////////////////////////////////////////////////////
   // We convert it to a regular matrix to compute its condition number
   //////////////////////////////////////////////////////////////////////////////
-//  const il::Array2D<double> full_h = il::toArray2D(h);
-//  il::Status status{};
+  //  const il::Array2D<double> full_h = il::toArray2D(h);
+  //  il::Status status{};
   il::Timer timer{};
-//  timer.Start();
-//  const il::LU<il::Array2D<double>> full_lu_h{full_h, il::io, status};
-//  timer.Stop();
-//  status.AbortOnError();
-//
-//  std::cout << "Time for full LU-decomposition: " << timer.time() << std::endl;
-//
-//  const double norm_full_h = il::norm(full_h, il::Norm::L1);
-//  const double cn = full_lu_h.conditionNumber(il::Norm::L1, norm_full_h);
-//
-//  il::Array<double> y_full = full_lu_h.solve(y);
-//
-//  double relative_error_full = 0.0;
-//  for (il::int_t i = 0; i < y_full.size(); ++i) {
-//    const double re = il::abs(y_full[i] - 1.0);
-//    if (re > relative_error_full) {
-//      relative_error_full = re;
-//    }
-//  }
+  //  timer.Start();
+  //  const il::LU<il::Array2D<double>> full_lu_h{full_h, il::io, status};
+  //  timer.Stop();
+  //  status.AbortOnError();
+  //
+  //  std::cout << "Time for full LU-decomposition: " << timer.time() <<
+  //  std::endl;
+  //
+  //  const double norm_full_h = il::norm(full_h, il::Norm::L1);
+  //  const double cn = full_lu_h.conditionNumber(il::Norm::L1, norm_full_h);
+  //
+  //  il::Array<double> y_full = full_lu_h.solve(y);
+  //
+  //  double relative_error_full = 0.0;
+  //  for (il::int_t i = 0; i < y_full.size(); ++i) {
+  //    const double re = il::abs(y_full[i] - 1.0);
+  //    if (re > relative_error_full) {
+  //      relative_error_full = re;
+  //    }
+  //  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Let's play with it
@@ -468,7 +486,7 @@ TEST(solve, test4) {
 }
 
 TEST(solve, test5) {
-  const il::int_t n = 4 * 32768;
+  const il::int_t n = 32768;
   const il::int_t dim = 2;
   const il::int_t leaf_max_size = 256;
 
@@ -480,7 +498,8 @@ TEST(solve, test5) {
   }
   const il::Cluster cluster = il::cluster(leaf_max_size, il::io, point);
 
-  const double eta = 10.0;
+    const double eta = 0.1;
+//  const double eta = 10.0;
   const il::Tree<il::SubHMatrix, 4> hmatrix_tree =
       il::hmatrixTree(point, cluster.partition, eta);
 
@@ -500,7 +519,7 @@ TEST(solve, test5) {
   // Let's play with it
   //////////////////////////////////////////////////////////////////////////////
   const double epsilon_lu = 1.0e-10;
-//  const double epsilon_lu = 0;
+  //  const double epsilon_lu = 0;
   il::Timer timer{};
   timer.Start();
   il::luDecomposition(epsilon_lu, il::io, h);

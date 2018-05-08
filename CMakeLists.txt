@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(IL_BLAS 1)
 set(IL_MKL 1)
-set(IL_PARALLEL_MKL 1)
+set(IL_PARALLEL_MKL 0)
 set(IL_PARALLEL 0)
 
 if (IL_MKL)
@@ -62,8 +62,8 @@ add_executable(HMatrix
         hmatrix/HMatrixUtils.h
         hmatrix/LowRank.h
         linearAlgebra/factorization/luDecomposition.h
-        linearAlgebra/factorization/lowRankAddition.h
-        linearAlgebra/factorization/lowRankAddition.cpp
+        linearAlgebra/factorization/lowRankApproximation.h
+        linearAlgebra/factorization/lowRankApproximation.cpp
         arrayFunctor/MatrixGenerator.h
         main.cpp
         Matrix.h
@@ -86,7 +86,7 @@ endif()
 
 set(UNIT_TEST_FILES
     cluster/cluster.cpp
-    linearAlgebra/factorization/lowRankAddition.cpp
+        linearAlgebra/factorization/lowRankApproximation.cpp
     hmatrix/_test/HMatrixUtils_test.cpp
     compression/_test/adaptiveCrossApproximation_test.cpp
     linearAlgebra/factorization/_test/luDecomposition_test.cpp

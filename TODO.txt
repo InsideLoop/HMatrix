@@ -1,2 +1,11 @@
 - Handle the case where the low rank matrix is 0. This make the
   factorization A.B^T with A and B both having 0 columns
+
+- Find something to have a better handling of parallelization. So far, the
+  parallelizarion is verry poor. Here are the timings for the LU decomposition
+  on the first level.
+  Compression ratio: 0.00477397
+  Time00: 2.56236s
+  Time01: 0.1938s
+  Time10: 0.178354s
+  Time11: 3.76727s

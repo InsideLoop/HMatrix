@@ -1,6 +1,6 @@
 #include <hmatrix/HMatrix.h>
 #include <linearAlgebra/blas/hsolve.h>
-#include <linearAlgebra/factorization/lowRankAddition.h>
+#include "linearAlgebra/factorization/lowRankApproximation.h"
 #include <linearAlgebra/factorization/luDecomposition.h>
 
 #include <iostream>

@@ -4,7 +4,7 @@
 #include <il/linearAlgebra/Matrix.h>
 #include <il/linearAlgebra/dense/factorization/qrDecomposition.h>
 
-#include <linearAlgebra/factorization/lowRankAddition.h>
+#include <linearAlgebra/factorization/lowRankApproximation.h>
 
 #ifdef IL_MKL
 #include <mkl_lapacke.h>
@@ -13,6 +13,112 @@
 #endif
 
 namespace il {
+
+il::LowRank<double> lowRank(double epsilon, il::Array2DView<double> A) {
+  const il::int_t n0 = A.size(0);
+  const il::int_t n1 = A.size(1);
+  il::Array2D<double> M{n0, n1};
+  il::copy(A, il::io, M.Edit());
+
+  il::Array2D<double> U{n0, n0};
+  il::Array2D<double> V{n1, n1};
+  il::Array<double> svalue{il::min(n0, n1)};
+  il::Array<double> superb{il::min(n0, n1) - 1};
+  {
+    const int layout = LAPACK_COL_MAJOR;
+    const char jobu = 'A';
+    const char jobvt = 'A';
+    const lapack_int m = static_cast<lapack_int>(n0);
+    const lapack_int n = static_cast<lapack_int>(n1);
+    const lapack_int lda = static_cast<lapack_int>(M.stride(1));
+    const lapack_int ldu = static_cast<lapack_int>(U.stride(1));
+    const lapack_int ldvt = static_cast<lapack_int>(V.stride(1));
+    const lapack_int lapack_error =
+        LAPACKE_dgesvd(layout, jobu, jobvt, m, n, M.Data(), lda, svalue.Data(),
+                       U.Data(), ldu, V.Data(), ldvt, superb.Data());
+    IL_EXPECT_FAST(lapack_error == 0);
+  }
+
+  il::Array2D<double> a{n0, 0, 0.0};
+  il::Array2D<double> b{n1, 0, 0.0};
+  {
+    il::int_t k = 0;
+    while (k < n0 && k < n1 && svalue[k] >= epsilon * svalue[0]) {
+      a.Resize(a.size(0), a.size(1) + 1, 0.0);
+      b.Resize(b.size(0), b.size(1) + 1, 0.0);
+      for (il::int_t i = 0; i < n0; ++i) {
+        a(i, k) = std::sqrt(svalue[k]) * U(i, k);
+      }
+      for (il::int_t i = 0; i < n1; ++i) {
+        b(i, k) = std::sqrt(svalue[k]) * V(k, i);
+      }
+      ++k;
+    }
+  }
+
+  IL_EXPECT_FAST(a.size(1) > 0);
+
+  il::LowRank<double> ans{};
+  ans.A = std::move(a);
+  ans.B = std::move(b);
+
+  return ans;
+}
+
+il::LowRank<std::complex<double>> lowRank(
+    double epsilon, il::Array2DView<std::complex<double>> A) {
+  const il::int_t n0 = A.size(0);
+  const il::int_t n1 = A.size(1);
+  il::Array2D<std::complex<double>> M{n0, n1};
+  il::copy(A, il::io, M.Edit());
+
+  il::Array2D<std::complex<double>> U{n0, n0};
+  il::Array2D<std::complex<double>> V{n1, n1};
+  il::Array<double> svalue{il::min(n0, n1)};
+  il::Array<double> superb{il::min(n0, n1) - 1};
+  {
+    const int layout = LAPACK_COL_MAJOR;
+    const char jobu = 'A';
+    const char jobvt = 'A';
+    const lapack_int m = static_cast<lapack_int>(n0);
+    const lapack_int n = static_cast<lapack_int>(n1);
+    const lapack_int lda = static_cast<lapack_int>(M.stride(1));
+    const lapack_int ldu = static_cast<lapack_int>(U.stride(1));
+    const lapack_int ldvt = static_cast<lapack_int>(V.stride(1));
+    const lapack_int lapack_error = LAPACKE_zgesvd(
+        layout, jobu, jobvt, m, n,
+        reinterpret_cast<lapack_complex_double*>(M.Data()), lda, svalue.Data(),
+        reinterpret_cast<lapack_complex_double*>(U.Data()), ldu,
+        reinterpret_cast<lapack_complex_double*>(V.Data()), ldvt,
+        superb.Data());
+    IL_EXPECT_FAST(lapack_error == 0);
+  }
+
+  il::Array2D<std::complex<double>> a{n0, 0, 0.0};
+  il::Array2D<std::complex<double>> b{n1, 0, 0.0};
+  {
+    il::int_t k = 0;
+    while (k < n0 && k < n1 && svalue[k] >= epsilon * svalue[0]) {
+      a.Resize(a.size(0), a.size(1) + 1, 0.0);
+      b.Resize(b.size(0), b.size(1) + 1, 0.0);
+      for (il::int_t i = 0; i < n0; ++i) {
+        a(i, k) = std::sqrt(svalue[k]) * U(i, k);
+      }
+      for (il::int_t i = 0; i < n1; ++i) {
+        b(i, k) = std::sqrt(svalue[k]) * V(k, i);
+      }
+      ++k;
+    }
+  }
+
+  IL_EXPECT_FAST(a.size(1) > 0);
+
+  il::LowRank<std::complex<double>> ans{};
+  ans.A = std::move(a);
+  ans.B = std::move(b);
+
+  return ans;
+}
 
 il::LowRank<double> lowRankAddition(double epsilon, double alpha,
                                     il::Array2DView<double> aa,
