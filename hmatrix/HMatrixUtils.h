@@ -83,6 +83,8 @@ il::int_t nbElements(const il::HMatrix<T> &H, il::spot_t s) {
   } else {
     IL_UNREACHABLE;
   }
+  IL_UNREACHABLE;
+  return 0;
 }
 
 template <typename T>

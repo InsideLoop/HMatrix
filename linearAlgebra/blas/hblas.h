@@ -304,9 +304,9 @@ void blas(T alpha, il::Array2DView<T> A, const il::HMatrix<T>& B, il::spot_t s,
     il::Array2DView<T> A0 = A.view(il::Range{0, A.size(0)}, il::Range{0, n00});
     il::Array2DView<T> A1 =
         A.view(il::Range{0, A.size(0)}, il::Range{n00 + n10});
-    il::Array2DEdit<T> C0 = C0.Edit(il::Range{0, C.size(0)}, il::Range{0, n01});
+    il::Array2DEdit<T> C0 = C.Edit(il::Range{0, C.size(0)}, il::Range{0, n01});
     il::Array2DEdit<T> C1 =
-        C1.Edit(il::Range{0, C.size(0)}, il::Range{n01 + n11});
+        C.Edit(il::Range{0, C.size(0)}, il::Range{n01 + n11});
     il::blas(alpha, A0, B, s00, beta, il::io, C0);
     il::blas(alpha, A1, B, s10, beta, il::io, C0);
     il::blas(alpha, A0, B, s01, beta, il::io, C1);

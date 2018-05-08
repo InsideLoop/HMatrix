@@ -27,7 +27,7 @@ inline double frobeniusNorm(const il::Array2D<std::complex<double>> &A) {
   double ans = 0.0;
   for (il::int_t i1 = 0; i1 < A.size(1); ++i1) {
     for (il::int_t i0 = 0; i0 < A.size(0); ++i0) {
-      ans += il::ipow<2>(A(i0, i1).real()); + il::ipow<2>(A(i0, i1).imag());
+      ans += il::ipow<2>(A(i0, i1).real()) + il::ipow<2>(A(i0, i1).imag());
     }
   }
   return ans;
