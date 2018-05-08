@@ -53,9 +53,7 @@ add_executable(HMatrix
         hmatrix/HMatrixNode.h
         hmatrix/HMatrixUtils.h
         hmatrix/LowRank.h
-        linearAlgebra/blas/hsolve.cpp
         linearAlgebra/factorization/luDecomposition.h
-        linearAlgebra/factorization/luDecomposition.cpp
         linearAlgebra/factorization/lowRankAddition.h
         linearAlgebra/factorization/lowRankAddition.cpp
         arrayFunctor/MatrixGenerator.h
@@ -63,9 +61,8 @@ add_executable(HMatrix
         Matrix.h
         arrayFunctor/ArrayFunctor.h
         linearAlgebra/blas/hsolve.h
-        linearAlgebra/blas/hsolve.cpp
         linearAlgebra/blas/hblas.h
-        linearAlgebra/blas/hblas.cpp)
+        )
 
 target_include_directories(HMatrix PRIVATE /home/fayard/Documents/Projects/InsideLoop/InsideLoop /home/fayard/Documents/Projects/EPFL/HMatrix)
 target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
@@ -77,9 +74,6 @@ target_link_libraries(HMatrix ${CMAKE_MKL_LIBRARIES})
 
 set(UNIT_TEST_FILES
     cluster/cluster.cpp
-    linearAlgebra/blas/hsolve.cpp
-    linearAlgebra/blas/hblas.cpp
-    linearAlgebra/factorization/luDecomposition.cpp
     linearAlgebra/factorization/lowRankAddition.cpp
     hmatrix/_test/HMatrixUtils_test.cpp
     compression/_test/adaptiveCrossApproximation_test.cpp

@@ -8,35 +8,34 @@
 
 namespace il {
 
-template <il::int_t p>
-void hmatrix_rec(const il::MatrixGenerator<double>& matrix,
+template <il::int_t p, typename T>
+void hmatrix_rec(const il::MatrixGenerator<T>& matrix,
                  const il::Tree<il::SubHMatrix, 4>& tree, il::spot_t st,
-                 double epsilon, il::spot_t shm, il::io_t,
-                 il::HMatrix<double>& hm) {
+                 double epsilon, il::spot_t shm, il::io_t, il::HMatrix<T>& hm) {
   const il::SubHMatrix info = tree.value(st);
   switch (info.type) {
     case il::HMatrixType::FullRank: {
       const il::int_t n0 = info.range0.end - info.range0.begin;
       const il::int_t n1 = info.range1.end - info.range1.begin;
       hm.SetFullRank(shm, n0, n1);
-      il::Array2DEdit<double> sub = hm.AsFullRank(shm);
+      il::Array2DEdit<T> sub = hm.AsFullRank(shm);
       matrix.set(info.range0.begin, info.range1.begin, il::io, sub);
       return;
     } break;
     case il::HMatrixType::LowRank: {
       const il::int_t n0 = info.range0.end - info.range0.begin;
       const il::int_t n1 = info.range1.end - info.range1.begin;
-      il::LowRank<double> sr = il::adaptiveCrossApproximation<p>(
+      il::LowRank<T> sr = il::adaptiveCrossApproximation<p>(
           matrix, info.range0, info.range1, epsilon);
       const il::int_t r = sr.A.size(1);
       hm.SetLowRank(shm, n0, n1, r);
-      il::Array2DEdit<double> A = hm.AsLowRankA(shm);
+      il::Array2DEdit<T> A = hm.AsLowRankA(shm);
       for (il::int_t i1 = 0; i1 < A.size(1); ++i1) {
         for (il::int_t i0 = 0; i0 < A.size(0); ++i0) {
           A(i0, i1) = sr.A(i0, i1);
         }
       }
-      il::Array2DEdit<double> B = hm.AsLowRankB(shm);
+      il::Array2DEdit<T> B = hm.AsLowRankB(shm);
       for (il::int_t i1 = 0; i1 < B.size(1); ++i1) {
         for (il::int_t i0 = 0; i0 < B.size(0); ++i0) {
           B(i0, i1) = sr.B(i1, i0);
@@ -65,10 +64,11 @@ void hmatrix_rec(const il::MatrixGenerator<double>& matrix,
   }
 }
 
-inline il::HMatrix<double> toHMatrix(const il::MatrixGenerator<double>& matrix,
-                                     const il::Tree<il::SubHMatrix, 4>& tree,
-                                     double epsilon) {
-  il::HMatrix<double> ans{};
+template <typename T>
+il::HMatrix<T> toHMatrix(const il::MatrixGenerator<T>& matrix,
+                         const il::Tree<il::SubHMatrix, 4>& tree,
+                         double epsilon) {
+  il::HMatrix<T> ans{};
   if (matrix.blockSize() == 1) {
     hmatrix_rec<1>(matrix, tree, tree.root(), epsilon, ans.root(), il::io, ans);
   } else if (matrix.blockSize() == 2) {
